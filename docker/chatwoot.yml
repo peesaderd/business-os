@@ -1,0 +1,99 @@
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: chatwoot
+      POSTGRES_PASSWORD: chatwoot_password
+      POSTGRES_DB: chatwoot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatwoot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: always
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    environment:
+      MH_STORAGE: maildir
+      MH_MAILDIR_PATH: /tmp/mailhog-data
+
+  chatwoot:
+    image: chatwoot/chatwoot:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Rails
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${CHATWOOT_SECRET_KEY:-change_this_secret_key_in_production}
+      FRONTEND_URL: http://localhost:3000
+      NODE_ENV: production
+
+      # Database
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: chatwoot
+      POSTGRES_USERNAME: chatwoot
+      POSTGRES_PASSWORD: chatwoot_password
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # SMTP (MailHog for development)
+      SMTP_ADDRESS: mailhog
+      SMTP_PORT: 1025
+      SMTP_DOMAIN: localhost
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_AUTHENTICATION: plain
+      SMTP_ENABLE_STARTTLS_AUTO: false
+
+      # Chatwoot inbox webhook → AI Chat Bridge
+      # Set this in Chatwoot UI under Settings → Inboxes → [inbox] → Webhooks
+      # URL: http://host.docker.internal:8108/api/chat/v1/message
+      WEBHOOK_URL: ""
+
+      # Optional: enable for auto-resolution of conversations
+      ENABLE_ACCOUNT_SIGNUP: "true"
+      DEFAULT_LOCALE: en
+
+      # Storage
+      ACTIVE_STORAGE_SERVICE: local
+
+      # Logging
+      LOG_LEVEL: info
+      RACK_TIMEOUT_SERVICE_TIMEOUT: 30
+
+    volumes:
+      - chatwoot_storage:/app/storage
+
+volumes:
+  postgres_data:
+  redis_data:
+  chatwoot_storage:

@@ -1,0 +1,115 @@
+
+
+const axios = require('axios');
+
+/**
+ * Provider configurations with API endpoints and pricing.
+ * Each provider has: name, baseUrl, costPerGen, and a generate() function.
+ */
+
+const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || '';
+const MINIMAX_API_KEY = process.env.MINIMAX_API_KEY || '';
+const PIKA_API_KEY = process.env.PIKA_API_KEY || '';
+const RUNWAY_API_KEY = process.env.RUNWAY_API_KEY || '';
+const KLING_API_KEY = process.env.KLING_API_KEY || '';
+
+const providers = [
+  {
+    name: 'WaveSpeed',
+    cost: 0.05,
+    priority: 1,
+    key: WAVESPEED_API_KEY,
+    hasValidKey: () => WAVESPEED_API_KEY.length > 0,
+    generate: async (prompt, options = {}) => {
+      const res = await axios.post('https://api.wavespeed.ai/v1/video/generate', {
+        prompt,
+        duration: options.duration || 5,
+        resolution: options.resolution || '1024x1024',
+        model: options.model || 'wavespeed-v1',
+      }, {
+        headers: { Authorization: `Bearer ${WAVESPEED_API_KEY}` },
+        timeout: 60000,
+      });
+      return res.data;
+    },
+  },
+  {
+    name: 'Minimax',
+    cost: 0.10,
+    priority: 2,
+    key: MINIMAX_API_KEY,
+    hasValidKey: () => MINIMAX_API_KEY.length > 0,
+    generate: async (prompt, options = {}) => {
+      const res = await axios.post('https://api.minimax.chat/v1/video/generate', {
+        prompt,
+        duration: options.duration || 5,
+        resolution: options.resolution || '1024x1024',
+      }, {
+        headers: { Authorization: `Bearer ${MINIMAX_API_KEY}` },
+        timeout: 60000,
+      });
+      return res.data;
+    },
+  },
+  {
+    name: 'Pika',
+    cost: 0.30,
+    priority: 3,
+    key: PIKA_API_KEY,
+    hasValidKey: () => PIKA_API_KEY.length > 0,
+    generate: async (prompt, options = {}) => {
+      const res = await axios.post('https://api.pika.art/v1/video/generate', {
+        prompt,
+        duration: options.duration || 5,
+        resolution: options.resolution || '1024x1024',
+        aspect_ratio: options.aspectRatio || '1:1',
+      }, {
+        headers: {
+          Authorization: `Bearer ${PIKA_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 60000,
+      });
+      return res.data;
+    },
+  },
+  {
+    name: 'Runway',
+    cost: 0.40,
+    priority: 4,
+    key: RUNWAY_API_KEY,
+    hasValidKey: () => RUNWAY_API_KEY.length > 0,
+    generate: async (prompt, options = {}) => {
+      const res = await axios.post('https://api.runwayml.com/v1/video/generate', {
+        prompt,
+        duration: options.duration || 5,
+        resolution: options.resolution || '1024x1024',
+      }, {
+        headers: { Authorization: `Bearer ${RUNWAY_API_KEY}` },
+        timeout: 120000,
+      });
+      return res.data;
+    },
+  },
+  {
+    name: 'Kling',
+    cost: 0.60,
+    priority: 5,
+    key: KLING_API_KEY,
+    hasValidKey: () => KLING_API_KEY.length > 0,
+    generate: async (prompt, options = {}) => {
+      const res = await axios.post('https://api.klingai.com/v1/video/generate', {
+        prompt,
+        duration: options.duration || 5,
+        resolution: options.resolution || '1024x1024',
+      }, {
+        headers: { Authorization: `Bearer ${KLING_API_KEY}` },
+        timeout: 120000,
+      });
+      return res.data;
+    },
+  },
+];
+
+module.exports = { providers };
+

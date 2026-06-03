@@ -1,0 +1,111 @@
+# ============================================================
+# Chatwoot + PostgreSQL + Redis — Docker Compose
+# For AI Chat Support frontend
+# ============================================================
+# Usage:
+#   docker compose -f docker-compose-chatwoot.yml up -d
+#   Wait ~60s for migrations, then access http://localhost:3000
+#   Create account, then configure webhook to http://host:8108/api/chat/v1/chatwoot-webhook
+# ============================================================
+
+version: '3.8'
+
+services:
+  chatwoot-postgres:
+    image: postgres:16-alpine
+    container_name: chatwoot-postgres
+    restart: unless-stopped
+    volumes:
+      - chatwoot-postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chatwoot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chatwoot_password}
+      POSTGRES_DB: ${POSTGRES_DB:-chatwoot}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chatwoot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chatwoot-redis:
+    image: redis:7-alpine
+    container_name: chatwoot-redis
+    restart: unless-stopped
+    volumes:
+      - chatwoot-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chatwoot:
+    image: chatwoot/chatwoot:latest
+    container_name: chatwoot
+    restart: unless-stopped
+    depends_on:
+      chatwoot-postgres:
+        condition: service_healthy
+      chatwoot-redis:
+        condition: service_healthy
+    ports:
+      - "${CHATWOOT_PORT:-3000}:3000"
+    environment:
+      # ─── Rails / App ───
+      RAILS_ENV: ${RAILS_ENV:-production}
+      # Set SECRET_KEY_BASE to a persistent value (generate once with: openssl rand -hex 64)
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_changeme_changeme_changeme_changeme_changeme_64chars!}
+      # URL config
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # ─── Database ───
+      POSTGRES_HOST: chatwoot-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USERNAME: ${POSTGRES_USER:-chatwoot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chatwoot_password}
+      POSTGRES_DATABASE: ${POSTGRES_DB:-chatwoot}
+      # ─── Redis ───
+      REDIS_URL: redis://chatwoot-redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # ─── Active Job ───
+      ACTIVE_JOB_QUEUE_ADAPTER: sidekiq
+      SIDEKIQ_CONCURRENCY: ${SIDEKIQ_CONCURRENCY:-5}
+      # ─── Webhook ───
+      # Set this in Chatwoot UI Settings → Account → Integrations → Webhooks
+      # URL: http://your-host:8108/api/chat/v1/chatwoot-webhook
+      # ─── Mail (optional) ───
+      MAILER_SENDER_EMAIL: ${MAILER_SENDER_EMAIL:-chatwoot@example.com}
+      SMTP_ADDRESS: ${SMTP_ADDRESS:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_AUTH: ${SMTP_AUTH:-plain}
+      SMTP_ENABLE_STARTTLS_AUTO: ${SMTP_ENABLE_STARTTLS_AUTO:-true}
+      SMTP_DOMAIN: ${SMTP_DOMAIN:-}
+      # ─── Storage (default: local, use S3 for prod) ───
+      ACTIVE_STORAGE_SERVICE: local
+      # S3 config (uncomment for production):
+      # ACTIVE_STORAGE_SERVICE: amazon
+      # S3_BUCKET_NAME: your-chatwoot-bucket
+      # AWS_ACCESS_KEY_ID:
+      # AWS_SECRET_ACCESS_KEY:
+      # AWS_REGION: us-east-1
+      # ─── Additional ───
+      ENABLE_ACCOUNT_SIGNUP: ${ENABLE_ACCOUNT_SIGNUP:-true}
+      INSTALLATION_NAME: ${INSTALLATION_NAME:-Business OS}
+      NODE_ENV: ${NODE_ENV:-production}
+    volumes:
+      - chatwoot-storage:/app/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  chatwoot-postgres-data:
+    name: chatwoot-postgres-data
+  chatwoot-redis-data:
+    name: chatwoot-redis-data
+  chatwoot-storage:
+    name: chatwoot-storage

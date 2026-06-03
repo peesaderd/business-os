@@ -1,0 +1,66 @@
+[
+  {
+    "id": "3b5b7253-a34a-4042-9f58-da0855f06b60",
+    "status": "published",
+    "postData": {
+      "platforms": [
+        "twitter",
+        "facebook"
+      ],
+      "content": "Hello world from the Social Post service! #test",
+      "media_urls": [],
+      "scheduled_at": 1780503238746
+    },
+    "scheduledAt": 1780503238747,
+    "createdAt": 1780503238747,
+    "retryCount": 0,
+    "maxRetries": 3,
+    "lastError": null,
+    "completedAt": 1780503238751,
+    "results": [
+      {
+        "platform": "twitter",
+        "status": "published",
+        "result": {
+          "success": true,
+          "platformPostId": "twitter_1780503238751_hvodwy",
+          "url": "https://twitter.com/stub-post/1780503238751",
+          "raw": {
+            "simulated": true
+          }
+        }
+      },
+      {
+        "platform": "facebook",
+        "status": "published",
+        "result": {
+          "success": true,
+          "platformPostId": "facebook_1780503238751_gbtyuv",
+          "url": "https://facebook.com/stub-post/1780503238751",
+          "raw": {
+            "simulated": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "c76b5878-dbf5-4798-9f34-4b31e83299a8",
+    "status": "cancelled",
+    "postData": {
+      "platforms": [
+        "twitter",
+        "facebook"
+      ],
+      "content": "Scheduled post test! #scheduler",
+      "media_urls": [],
+      "scheduled_at": 1781092800000
+    },
+    "scheduledAt": 1781092800000,
+    "createdAt": 1780503265296,
+    "retryCount": 0,
+    "maxRetries": 3,
+    "lastError": null,
+    "completedAt": 1780503265377
+  }
+]

@@ -1,0 +1,71 @@
+{
+  "default": {
+    "services": {
+      "b4c899c5-3153-47d1-b64c-571c9d57f03d": {
+        "id": "b4c899c5-3153-47d1-b64c-571c9d57f03d",
+        "tenantId": "default",
+        "name": "Consultation",
+        "description": "",
+        "durationMinutes": 30,
+        "price": 50,
+        "currency": "USD",
+        "color": "#3B82F6",
+        "isActive": true,
+        "createdAt": "2026-06-03T16:23:23.761Z",
+        "updatedAt": "2026-06-03T16:23:23.761Z"
+      }
+    },
+    "staff": {
+      "55f1f698-d7c9-46bf-8293-8e8680217b70": {
+        "id": "55f1f698-d7c9-46bf-8293-8e8680217b70",
+        "tenantId": "default",
+        "name": "Dr. Smith",
+        "email": "smith@example.com",
+        "phone": "",
+        "color": "#10B981",
+        "isActive": true,
+        "createdAt": "2026-06-03T16:23:23.930Z",
+        "updatedAt": "2026-06-03T16:23:23.930Z"
+      }
+    },
+    "bookings": {
+      "74466203-e2bf-4e2f-9600-10a68db6acb7": {
+        "id": "74466203-e2bf-4e2f-9600-10a68db6acb7",
+        "tenantId": "default",
+        "serviceId": "b4c899c5-3153-47d1-b64c-571c9d57f03d",
+        "staffId": "55f1f698-d7c9-46bf-8293-8e8680217b70",
+        "startTime": "2026-06-10T09:00:00.000Z",
+        "durationMinutes": 30,
+        "endTime": "2026-06-10T09:30:00.000Z",
+        "customerInfo": {
+          "name": "John Doe",
+          "email": "john@example.com",
+          "phone": "+1234567890",
+          "notes": ""
+        },
+        "notes": "",
+        "status": "cancelled",
+        "price": 50,
+        "currency": "USD",
+        "createdAt": "2026-06-03T16:23:24.251Z",
+        "updatedAt": "2026-06-03T16:23:24.568Z"
+      }
+    },
+    "waitlist": [
+      {
+        "id": "9d7f95cb-1ce4-4de8-83e7-371bc0a36c54",
+        "tenantId": "default",
+        "serviceId": "b4c899c5-3153-47d1-b64c-571c9d57f03d",
+        "staffId": "55f1f698-d7c9-46bf-8293-8e8680217b70",
+        "date": "2026-06-10",
+        "customerInfo": {
+          "name": "Jane Wait",
+          "email": "jane@example.com",
+          "phone": ""
+        },
+        "createdAt": "2026-06-03T16:23:24.645Z"
+      }
+    ],
+    "breaks": {}
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "business-os",
+  "version": "0.1.0",
+  "description": "Business OS — AI-Driven All-in-One Business Platform",
+  "private": true,
+  "scripts": {
+    "dev:gateway": "node gateway/server.js",
+    "dev:ai-chat": "node services/ai-chat/server.js",
+    "dev:image-gen": "node services/image-gen/server.js",
+    "dev:video-gen": "node services/video-gen/server.js",
+    "dev:social-post": "node services/social-post/server.js",
+    "dev:pos": "node services/pos/server.js",
+    "dev:booking": "node services/booking/server.js",
+    "dev:queue": "node services/queue/server.js",
+    "dev:website": "node services/website-builder/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "fastify": "^5.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "morgan": "^1.10.0",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

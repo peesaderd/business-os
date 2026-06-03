@@ -1,0 +1,20 @@
+{
+  "name": "business-os-video-gen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Business OS Video Generation Service — Multi-provider AI video pipeline with template system and ERP MCP integration",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "morgan": "^1.10.0",
+    "axios": "^1.7.0",
+    "better-sqlite3": "^11.0.0",
+    "uuid": "^10.0.0"
+  }
+}

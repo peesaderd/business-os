@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Queue Kiosk</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --success: #16a34a;
+      --warning: #ea580c;
+      --danger: #dc2626;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-400: #9ca3af;
+      --gray-600: #4b5563;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+    }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--gray-900);
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .container {
+      width: 100%;
+      max-width: 560px;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    @keyframes confetti {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(-200px) rotate(720deg); opacity: 0; }
+    }
+
+    /* ─── Header ──────────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, var(--primary), #7c3aed);
+      color: #fff;
+      padding: 28px 24px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.5px; }
+    .header p { margin-top: 6px; opacity: 0.85; font-size: 0.95rem; }
+    .header .queue-count {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 6px 18px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    /* ─── Screen Container ────────────────────────────────────── */
+    .screen { padding: 24px; display: none; animation: slideIn 0.35s ease-out; }
+    .screen.active { display: block; }
+
+    /* ─── Welcome / Attract Screen ────────────────────────────── */
+    .welcome-icon {
+      font-size: 4rem;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .welcome-btn {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), #7c3aed);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .welcome-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .welcome-btn:active { transform: translateY(0); }
+
+    /* ─── Service Selection ───────────────────────────────────── */
+    .screen-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 16px; color: var(--gray-800); }
+    .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .service-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 12px;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      background: var(--gray-50);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .service-card:hover { border-color: var(--primary); background: var(--primary-light); transform: translateY(-2px); }
+    .service-card:active { transform: scale(0.97); }
+    .service-card.selected { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 3px var(--primary-light); }
+    .service-card .icon { font-size: 2.2rem; margin-bottom: 8px; }
+    .service-card .label { font-weight: 600; font-size: 0.95rem; }
+    .service-card .desc { font-size: 0.8rem; color: var(--gray-600); margin-top: 4px; }
+
+    /* ─── Form ────────────────────────────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--gray-600); margin-bottom: 4px; }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-group input:focus { border-color: var(--primary); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); opacity: 0.95; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      display: inline-block;
+      padding: 10px 20px;
+      color: var(--primary);
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+      margin-top: 12px;
+    }
+    .btn-secondary:hover { background: var(--gray-200); }
+
+    /* ─── Confirmation ────────────────────────────────────────── */
+    .confirmation-icon { text-align: center; font-size: 3.5rem; margin-bottom: 8px; }
+    .ticket-number {
+      text-align: center;
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 4px;
+      margin: 8px 0;
+    }
+    .ticket-detail {
+      text-align: center;
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .ticket-detail strong { color: var(--gray-800); }
+
+    /* ─── Live Queue Status ───────────────────────────────────── */
+    .live-status { margin-top: 24px; background: var(--gray-50); border-radius: 10px; padding: 16px; }
+    .live-status h3 { font-size: 0.9rem; font-weight: 600; color: var(--gray-600); margin-bottom: 8px; }
+    .live-status .now-serving {
+      text-align: center;
+      padding: 12px;
+      background: #fef3c7;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #92400e;
+    }
+    .live-queue-list { margin-top: 8px; max-height: 180px; overflow-y: auto; }
+    .live-queue-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 4px;
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 0.85rem;
+    }
+    .live-queue-item:last-child { border-bottom: none; }
+    .live-queue-item .num { font-weight: 700; color: var(--gray-800); }
+    .live-queue-item .wait { color: var(--gray-600); }
+
+    /* ─── Loading / Error ─────────────────────────────────────── */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--gray-400);
+    }
+    .loading .spinner {
+      display: inline-block;
+      width: 32px; height: 32px;
+      border: 3px solid var(--gray-200);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-message {
+      background: #fef2f2;
+      color: var(--danger);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    /* ─── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 8px; }
+      .header { padding: 20px 16px 16px; }
+      .header h1 { font-size: 1.4rem; }
+      .screen { padding: 16px; }
+      .service-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .service-card { padding: 14px 8px; }
+      .ticket-number { font-size: 2.4rem; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <!-- Header -->
+    <div class="header">
+      <h1>🏪 Queue Kiosk</h1>
+      <p>Join the queue — we'll call you when it's your turn</p>
+      <div class="queue-count" id="queueCount">Loading queue…</div>
+    </div>
+
+    <!-- ─── Screen: Attract ──────────────────────────────────── -->
+    <div class="screen active" id="screen-attract">
+      <div class="welcome-icon">👋</div>
+      <p style="text-align:center; color:var(--gray-600); margin-bottom:20px; line-height:1.5;">
+        Welcome! Tap below to join our queue.<br>
+        <small>No app needed — just your name.</small>
+      </p>
+      <button class="welcome-btn" onclick="showScreen('service')">Get in Line →</button>
+      <div class="live-status" id="attractLiveStatus">
+        <h3>📋 Now Serving</h3>
+        <div class="now-serving" id="attractNowServing">—</div>
+        <div class="live-queue-list" id="attractQueueList"></div>
+      </div>
+    </div>
+
+    <!-- ─── Screen: Service Selection ────────────────────────── -->
+    <div class="screen" id="screen-service">
+      <div class="screen-title">What service do you need?</div>
+      <div class="service-grid" id="serviceGrid"></div>
+      <div style="margin-top:12px; text-align:center;">
+        <button class="btn-secondary" onclick="showScreen('attract')">← Back</button>
+      </div>
+    </div>
+
+    <!-- ─── Screen: Customer Info ────────────────────────────── -->
+    <div class="screen" id="screen-info">
+      <div class="screen-title" id="infoTitle">Your Information</div>
+      <div class="form-group">
+        <label for="infoName">Name *</label>
+        <input type="text" id="infoName" placeholder="Your name" autocomplete="name">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="infoPhone">Phone</label>
+          <input type="tel" id="infoPhone" placeholder="Phone number" autocomplete="tel">
+        </div>
+        <div class="form-group">
+          <label for="infoEmail">Email</label>
+          <input type="email" id="infoEmail" placeholder="Email (optional)" autocomplete="email">
+        </div>
+      </div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="infoVip">
+        <label for="infoVip">⭐ VIP / Priority Access</label>
+      </div>
+      <button class="btn-primary" id="joinBtn" onclick="joinQueue()">Join Queue</button>
+      <div class="error-message" id="joinError" style="display:none;"></div>
+      <div style="text-align:center; margin-top:8px;">
+        <button class="btn-secondary" onclick="showScreen('service')">← Change Service</button>
+      </div>
+    </div>
+
+    <!-- ─── Screen: Confirmation ─────────────────────────────── -->
+    <div class="screen" id="screen-confirmation">
+      <div class="confirmation-icon">✅</div>
+      <div class="screen-title" style="text-align:center;">You're in the Queue!</div>
+      <div class="ticket-number" id="confTicketNum">0001</div>
+      <div class="ticket-detail" id="confDetails"></div>
+      <div class="live-status">
+        <h3>📋 Live Queue Status</h3>
+        <div class="now-serving" id="confNowServing">—</div>
+        <div class="live-queue-list" id="confQueueList"></div>
+      </div>
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn-primary" onclick="startOver()">← New Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── State ─────────────────────────────────────────────────
+    const state = {
+      selectedService: null,
+      ticketNumber: null,
+      pollInterval: null,
+      apiBase: window.location.origin,
+      serviceTypes: [],
+    };
+
+    // ─── Screen manager ────────────────────────────────────────
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const el = document.getElementById('screen-' + name);
+      if (el) {
+        el.classList.add('active');
+        // Refresh live data on visible screens
+        if (name === 'attract' || name === 'confirmation') fetchQueueStatus();
+      }
+    }
+
+    // ─── Load service types ────────────────────────────────────
+    async function loadServices() {
+      try {
+        const res = await fetch(state.apiBase + '/api/queue/v1/health');
+        const data = await res.json();
+        if (data.stats && data.stats.byServiceType) {
+          state.serviceTypes = Object.keys(data.stats.byServiceType);
+        } else {
+          // Fallback from health stats
+          state.serviceTypes = data.stats && data.stats.byServiceType
+            ? Object.keys(data.stats.byServiceType)
+            : ['restaurant', 'clinic', 'salon', 'service_center'];
+        }
+        renderServices();
+        updateQueueCount(data);
+      } catch (err) {
+        console.error('Failed to load services:', err);
+        state.serviceTypes = ['restaurant', 'clinic', 'salon', 'service_center'];
+        renderServices();
+      }
+    }
+
+    // ─── Service icons ─────────────────────────────────────────
+    const serviceIcons = {
+      restaurant: '🍽️',
+      clinic: '🏥',
+      salon: '💇',
+      service_center: '🔧',
+      general: '📋',
+    };
+    const serviceLabels = {
+      restaurant: 'Restaurant',
+      clinic: 'Clinic',
+      salon: 'Salon',
+      service_center: 'Service Center',
+    };
+
+    function renderServices() {
+      const grid = document.getElementById('serviceGrid');
+      grid.innerHTML = '';
+      state.serviceTypes.forEach(st => {
+        const card = document.createElement('div');
+        card.className = 'service-card';
+        card.setAttribute('data-service', st);
+        card.innerHTML = `
+          <div class="icon">${serviceIcons[st] || '📋'}</div>
+          <div class="label">${serviceLabels[st] || st.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>
+          <div class="desc">Check in for this service</div>
+        `;
+        card.addEventListener('click', () => selectService(st));
+        grid.appendChild(card);
+      });
+    }
+
+    function selectService(service) {
+      state.selectedService = service;
+      document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+      const el = document.querySelector(`.service-card[data-service="${service}"]`);
+      if (el) el.classList.add('selected');
+      document.getElementById('infoTitle').textContent = `👤 Join ${serviceLabels[service] || service} Queue`;
+      setTimeout(() => showScreen('info'), 200);
+    }
+
+    // ─── Join Queue ────────────────────────────────────────────
+    async function joinQueue() {
+      const name = document.getElementById('infoName').value.trim();
+      const phone = document.getElementById('infoPhone').value.trim();
+      const email = document.getElementById('infoEmail').value.trim();
+      const isVip = document.getElementById('infoVip').checked;
+      const btn = document.getElementById('joinBtn');
+
+      if (!name) {
+        showError('Please enter your name');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Joining…';
+      hideError();
+
+      try {
+        const res = await fetch(state.apiBase + '/api/queue/v1/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serviceType: state.selectedService,
+            customerInfo: { name, phone, email },
+            isVip,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          showError(data.error || 'Failed to join queue');
+          btn.disabled = false;
+          btn.textContent = 'Join Queue';
+          return;
+        }
+
+        state.ticketNumber = data.ticket.ticketNumber;
+
+        // Show confirmation
+        document.getElementById('confTicketNum').textContent = data.ticket.ticketNumber;
+        document.getElementById('confDetails').innerHTML = `
+          <strong>Service:</strong> ${serviceLabels[state.selectedService] || state.selectedService}<br>
+          <strong>Position:</strong> #${data.ticket.position} in line<br>
+          <strong>Est. wait:</strong> ${data.ticket.estimatedWaitMinutes} minutes<br>
+          <strong>Name:</strong> ${name}
+        `;
+
+        showScreen('confirmation');
+        startPolling();
+      } catch (err) {
+        showError('Network error — please try again');
+        btn.disabled = false;
+        btn.textContent = 'Join Queue';
+      }
+    }
+
+    // ─── Live Polling ──────────────────────────────────────────
+    function startPolling() {
+      stopPolling();
+      if (state.ticketNumber) {
+        state.pollInterval = setInterval(() => {
+          fetchTicketStatus(state.ticketNumber);
+          fetchQueueStatus();
+        }, 5000);
+      }
+    }
+
+    function stopPolling() {
+      if (state.pollInterval) {
+        clearInterval(state.pollInterval);
+        state.pollInterval = null;
+      }
+    }
+
+    async function fetchTicketStatus(ticketNumber) {
+      try {
+        const res = await fetch(state.apiBase + '/api/queue/v1/status/' + ticketNumber);
+        const data = await res.json();
+        if (data.success && data.ticket) {
+          const t = data.ticket;
+          if (t.status === 'called' || t.status === 'served') {
+            // Update confirmation screen
+            const detailEl = document.getElementById('confDetails');
+            if (t.status === 'called') {
+              detailEl.innerHTML = `<span style="color:var(--warning);font-weight:600;">🔔 It's your turn! Please proceed to the counter.</span><br>
+                <small>Ticket: ${t.ticketNumber}</small>`;
+            } else if (t.status === 'served') {
+              detailEl.innerHTML = `<span style="color:var(--success);font-weight:600;">✓ You've been served!</span><br>
+                <small>Wait time: ${Math.round(t.actualWaitMinutes)} minutes</small>`;
+              stopPolling();
+            }
+          } else if (t.status === 'skipped' || t.status === 'no_show') {
+            detailEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">✕ Ticket ${t.status === 'skipped' ? 'skipped' : 'no-show'}</span><br>
+              <small>Please see a staff member for assistance.</small>`;
+            stopPolling();
+          } else {
+            // Update position
+            document.getElementById('confDetails').innerHTML = `
+              <strong>Service:</strong> ${serviceLabels[state.selectedService] || state.selectedService}<br>
+              <strong>Position:</strong> #${t.position} in line<br>
+              <strong>Est. wait:</strong> ${t.estimatedWaitMinutes} minutes
+            `;
+          }
+        }
+      } catch (err) {
+        // Silently retry
+      }
+    }
+
+    async function fetchQueueStatus() {
+      try {
+        const res = await fetch(state.apiBase + '/api/queue/v1/current');
+        const data = await res.json();
+        if (!data.success) return;
+
+        updateQueueCount(data);
+
+        // Now serving
+        const servingText = data.serving && data.serving.length > 0
+          ? '🔔 ' + data.serving.map(t => t.ticketNumber + ' (' + t.customerName + ')').join(', ')
+          : data.waiting.length > 0 ? '⏳ ' + data.waiting[0].customerName + ' is next' : '⏸️ No one being served';
+
+        document.getElementById('attractNowServing').textContent = servingText;
+        document.getElementById('confNowServing').textContent = servingText;
+
+        // Queue list
+        const renderQueueList = (containerId) => {
+          const list = document.getElementById(containerId);
+          if (!list) return;
+          list.innerHTML = '';
+          if (data.waiting && data.waiting.length > 0) {
+            data.waiting.slice(0, 10).forEach(t => {
+              const item = document.createElement('div');
+              item.className = 'live-queue-item';
+              item.innerHTML = `
+                <span class="num">#${t.position} ${t.ticketNumber}${t.isVip ? ' ⭐' : ''}</span>
+                <span class="wait">${t.estimatedWaitMinutes} min</span>
+              `;
+              list.appendChild(item);
+            });
+            if (data.waiting.length > 10) {
+              const more = document.createElement('div');
+              more.className = 'live-queue-item';
+              more.innerHTML = `<span style="color:var(--gray-400);font-style:italic;">…and ${data.waiting.length - 10} more</span>`;
+              list.appendChild(more);
+            }
+          } else {
+            list.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:8px;">Queue is empty ✨</div>';
+          }
+        };
+        renderQueueList('attractQueueList');
+        renderQueueList('confQueueList');
+      } catch (err) {
+        // Silent
+      }
+    }
+
+    function updateQueueCount(data) {
+      const el = document.getElementById('queueCount');
+      if (data) {
+        el.textContent = `👥 ${data.waiting} waiting · ${data.serving} serving · ${data.servedToday || data.totalServedToday} served today`;
+      }
+    }
+
+    // ─── Utility ───────────────────────────────────────────────
+    function showError(msg) {
+      const el = document.getElementById('joinError');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function hideError() {
+      const el = document.getElementById('joinError');
+      el.style.display = 'none';
+    }
+
+    function startOver() {
+      stopPolling();
+      state.ticketNumber = null;
+      state.selectedService = null;
+      document.getElementById('infoName').value = '';
+      document.getElementById('infoPhone').value = '';
+      document.getElementById('infoEmail').value = '';
+      document.getElementById('infoVip').checked = false;
+      document.getElementById('joinBtn').disabled = false;
+      document.getElementById('joinBtn').textContent = 'Join Queue';
+      hideError();
+      showScreen('attract');
+    }
+
+    // ─── Init ──────────────────────────────────────────────────
+    loadServices();
+    fetchQueueStatus();
+    // Auto-refresh attract screen
+    setInterval(fetchQueueStatus, 8000);
+  </script>
+</body>
+</html>
