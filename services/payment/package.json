@@ -1,0 +1,20 @@
+{
+  "name": "bos-payment",
+  "version": "1.0.0",
+  "description": "Business OS Payment Module — Stripe + Subscription + Invoice",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "stripe": "^17.0.0",
+    "better-sqlite3": "^11.0.0",
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.4.5",
+    "uuid": "^10.0.0",
+    "crypto": "^1.0.1"
+  }
+}
