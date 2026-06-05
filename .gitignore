@@ -31,3 +31,4 @@ data/
 # Temp files
 *.tmp
 .tmp/
+services/wpilot-engine/.env
