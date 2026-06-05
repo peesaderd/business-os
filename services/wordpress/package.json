@@ -1,0 +1,17 @@
+{
+  "name": "bos-wordpress",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Business OS — WordPress Module: AI-powered content, ERP integration, media sync",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.18.2",
+    "morgan": "^1.10.0"
+  }
+}
