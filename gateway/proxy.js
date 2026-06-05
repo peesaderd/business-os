@@ -10,6 +10,7 @@ const proxyConfigs = [
   { prefix: '/api/booking', target: 'http://localhost:8115' },
   { prefix: '/api/website', target: 'http://localhost:8120' },
   { prefix: '/api/wordpress', target: 'http://localhost:8109' },
+  { prefix: '/api/wpilot', target: 'http://localhost:8118' },
 ];
 
 const proxyMiddlewares = proxyConfigs.map((cfg) => ({
