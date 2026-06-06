@@ -87,9 +87,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS qr_payments (
     id              TEXT PRIMARY KEY,
     customer_id     TEXT NOT NULL,
+    customer_name   TEXT,
     amount          REAL NOT NULL,
     plan_id         TEXT,
+    promptpay_number TEXT,
     payment_ref     TEXT,
+    bank_ref        TEXT,
+    callback_url    TEXT,
     status          TEXT NOT NULL DEFAULT 'pending',
     paid_at         TEXT,
     expires_at      TEXT,
@@ -184,6 +188,12 @@ module.exports = {
     firstOfMonth.setDate(1);
     firstOfMonth.setHours(0, 0, 0, 0);
     return this.getUsage(customerId, null, firstOfMonth.toISOString());
+  },
+
+  // Logs
+  addLog({ customerId, level, message, metadata }) {
+    db.prepare('INSERT INTO payment_logs (customer_id, level, message, metadata) VALUES (?,?,?,?)')
+      .run(customerId, level, message, JSON.stringify(metadata || {}));
   },
 
   // Dashboard Stats
