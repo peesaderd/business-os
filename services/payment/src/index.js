@@ -26,6 +26,7 @@ app.use('/api/payment/checkout', require('./routes/checkout'));
 app.use('/api/payment/webhook', require('./routes/webhook'));
 app.use('/api/payment/subscriptions', require('./routes/subscriptions'));
 app.use('/api/payment/invoices', require('./routes/invoices'));
+app.use('/api/payment/qr', require('./routes/qr-payment'));
 
 // ── Health ──
 app.get('/api/payment/health', (req, res) => {

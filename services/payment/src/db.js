@@ -82,7 +82,21 @@ db.exec(`
     recorded_at     TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (customer_id) REFERENCES customers(id)
   );
+
+  -- QR PromptPay Payments
+  CREATE TABLE IF NOT EXISTS qr_payments (
+    id              TEXT PRIMARY KEY,
+    customer_id     TEXT NOT NULL,
+    amount          REAL NOT NULL,
+    plan_id         TEXT,
+    payment_ref     TEXT,
+    status          TEXT NOT NULL DEFAULT 'pending',
+    paid_at         TEXT,
+    expires_at      TEXT,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
+
 
 // ── Helpers ──
 
