@@ -1,0 +1,19 @@
+{
+  "name": "business-os-image-gen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Business OS Image Generation Service — Fal.ai pipeline with brand asset manager and template system",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "morgan": "^1.10.0",
+    "prodia": "^1.6.0"
+  }
+}
