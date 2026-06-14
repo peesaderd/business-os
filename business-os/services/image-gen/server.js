@@ -118,6 +118,116 @@ app.get('/api/image/v1/health', (req, res) => {
   });
 });
 
+// ─── UGC Video Pipeline ────────────────────────────────────────────────────
+
+/**
+ * POST /api/image/v1/ugc/generate-frames
+ * Generate video keyframes via Prodia UGC pipeline
+ *
+ * Body:
+ *   { productImageUrl: string, scenePrompt?: string, productName?: string,
+ *     durationSeconds?: number, fps?: number, resolution?: string,
+ *     modelGender?: string, style?: string }
+ */
+app.post('/api/image/v1/ugc/generate-frames', async (req, res) => {
+  try {
+    const {
+      productImageUrl,
+      productName,
+      scenePrompt,
+      durationSeconds,
+      fps,
+      resolution,
+      modelGender,
+      style,
+    } = req.body;
+
+    if (!productImageUrl) {
+      return res.status(400).json({ error: '"productImageUrl" is required' });
+    }
+
+    const result = await imageEngine.ugcGenerateVideo({
+      productImageUrl,
+      productName: productName || 'product',
+      scenePrompt: scenePrompt || '',
+      durationSeconds: parseInt(durationSeconds || '16', 10),
+      fps: parseFloat(fps || '1'),
+      resolution: resolution || '480p',
+      modelGender: modelGender || 'female',
+      style: style || 'holding',
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error('[ugc/generate-frames] Error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/image/v1/ugc/sam3-segment
+ * Run SAM3 on an image
+ * Body: { imageUrl: string, prompt?: string }
+ */
+app.post('/api/image/v1/ugc/sam3-segment', async (req, res) => {
+  try {
+    const { imageUrl, prompt } = req.body;
+    if (!imageUrl) return res.status(400).json({ error: '"imageUrl" is required' });
+    const result = await imageEngine.sam3Segment(imageUrl, prompt || 'segment the product in this image');
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/image/v1/ugc/remove-bg
+ * Prodia remove background
+ * Body: { imageUrl: string }
+ */
+app.post('/api/image/v1/ugc/remove-bg', async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+    if (!imageUrl) return res.status(400).json({ error: '"imageUrl" is required' });
+    const result = await imageEngine.prodiaRemoveBackground(imageUrl);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/image/v1/ugc/mask-bg
+ * Prodia mask background (output = mask image)
+ * Body: { imageUrl: string }
+ */
+app.post('/api/image/v1/ugc/mask-bg', async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+    if (!imageUrl) return res.status(400).json({ error: '"imageUrl" is required' });
+    const result = await imageEngine.prodiaMaskBackground(imageUrl);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/image/v1/ugc/face-restore
+ * Prodia face restore
+ * Body: { imageUrl: string }
+ */
+app.post('/api/image/v1/ugc/face-restore', async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+    if (!imageUrl) return res.status(400).json({ error: '"imageUrl" is required' });
+    const result = await imageEngine.prodiaFaceRestore(imageUrl);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ─── Image Generation ──────────────────────────────────────────────────────
 
 /**
@@ -814,6 +924,11 @@ app.use((req, res) => {
       'POST /api/image/v1/campaign/generate',
       'POST /api/image/v1/batch',
       'GET  /api/image/v1/category-templates',
+      'POST /api/image/v1/ugc/generate-frames',
+      'POST /api/image/v1/ugc/sam3-segment',
+      'POST /api/image/v1/ugc/remove-bg',
+      'POST /api/image/v1/ugc/mask-bg',
+      'POST /api/image/v1/ugc/face-restore',
     ],
   });
 });
