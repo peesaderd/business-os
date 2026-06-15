@@ -252,6 +252,7 @@ app.post('/api/image/v1/generate', async (req, res) => {
       thaiModel,
       tenantId,
       provider,
+      inputImage,
     } = req.body;
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
@@ -269,6 +270,7 @@ app.post('/api/image/v1/generate', async (req, res) => {
       upscale: upscale !== false,
       thaiModel: !!thaiModel,
       style: style || undefined,
+      inputImage: inputImage || undefined,
     });
 
     res.json({

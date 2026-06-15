@@ -270,12 +270,27 @@ async function prodiaGenerate(prompt, options = {}) {
     });
   }
 
+  const baseCost = count * (options.inputImage ? 0.0025 : 0.0015);
+
+  for (const result of results) {
+    try {
+      const fr = await prodiaFaceRestore(result.url);
+      const localInfo = await saveLocalImage(fr.buffer, `prodia_fr_${result.index}`);
+      result.url = localInfo.url;
+      result.localPath = localInfo.path;
+      result.filename = localInfo.filename;
+      result.size = localInfo.size;
+    } catch (_) {}
+  }
+
+  const finalCost = baseCost + results.length * 0.0008;
+
   return {
     success: true,
     provider: 'prodia',
     model: options.inputImage ? PRODIA_JOB_TYPES.img2img['klein.4b'] : PRODIA_JOB_TYPES.t2i['klein.4b'],
     images: results,
-    cost: count * (options.inputImage ? 0.0025 : 0.0015),
+    cost: finalCost,
   };
 }
 
