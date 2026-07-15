@@ -1,0 +1,88 @@
+<!DOCTYPE html><html class="TH"><head><meta charset="utf-8"><title>Seller Centre</title><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><script type="application/javascript">window.__disable_grafana__ = Math.random() > 0.05;
+    var mmfReportUrl = 'https://seller.shopee.sg/api/mmf-report/collect';
+    
+      if (window.__disable_grafana__) {
+        window.__is_init_reported__ = Promise.resolve();
+      } else {
+        window.__is_init_reported__ = fetch(mmfReportUrl, {
+          method: "POST",
+          mode: "cors",
+          cache: "default",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-request-id": Math.random().toString(36).slice(2),
+          },
+          body: JSON.stringify({
+            source: 'framework',
+            metric_type: 'count',
+            metric_target: 'stability_html_start',
+            metric_status: 'success',
+            url: 'local-seller-center',
+            env: 'live',
+            region: 'th',
+          })
+        }).then(res => {
+          if (res && res.ok) {
+            return;
+          }
+
+          throw new Error('report html_start error');
+        });
+      }</script><script type="text/javascript">if ('serviceWorker' in navigator) {
+      var swUrlQuery = '?sw_config=' + encodeURIComponent(JSON.stringify({}));
+      navigator.serviceWorker.register('/portal-cache-sw.js' + swUrlQuery, { scope: '/' })
+        .then(() => {
+          console.log('portal cache service worker is registered.')
+          window.__CACHE_SERVICE_WORKER_LOADED__ = true;
+        })
+        .catch(() => {});
+    }</script><script type="text/javascript">window.__performanceHTMLStartTime = Date.now();</script><script src="https://deo.shopeemobile.com/shopee/shopee-trackingsdk-live-sg/index.js"></script><link rel="icon" href="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/shopee/favicon.ico"><script type="text/javascript" src="https://deo.shopeemobile.com/shopee/shopee-seller-live-th/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/app-config.5df2ed2ecf9cf65dc5cbbc7ba32bcbf9.js" crossorigin="anonymous"></script><meta name="inject-canary"><meta name="inject-api"><script type="text/javascript" data-type="inject">window.__sellerDynamicPublicPath = 'https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/';
+    
+    window.__sellerDynamicCSSPath = 'css';
+    
+    window.__shopeeUIRemoteJS = 'https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/shopeeui/2.8.24/remote.js';</script><script type="text/javascript" src="https://deo.shopeemobile.com/shopee/mdap-web-sdk/umd/0.4.31/mdap.min.js"></script><style>@keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinning-s,
+    .spinning-ring {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      left: 50%;
+      top: 50%;
+      margin: -100px 0 0 -100px;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .spinning-s {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAMAAACahl6sAAAAk1BMVEUAAADuTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS3uTS0u26T8AAAAMHRSTlMA+kIR/dH2t5aETCTw7LuqIAfkdlvcwaSQVDw1Gwzo4NTMsWsoF3ovx51mYtiLcaBPbJ1BAAACqklEQVR42u3b2ZaiMBAG4AoCIiIquO86bm1v//s/3cwBtMG2tc9cpTz/d8tVTipJpSoIERERERERERERERERERERERERERERERER0f/qTtL2MWm5raU3+NyHO9HJaUeo6gdhV7TpveGWVjAVTaZr/MgbixqpwT1eKCp0h3ik3hQFNihpHdsv7c16gSq/J9Z7wcX6YyuFmrOv++U5Edu94uw4kap5r+6iYP0y2UXI+R9yQ2eUT0tbbHcOrGgit80CF4hmYrmOQcZM5EdTD3/Edg3kUrnnINbrI/MmynWQO4lyY2TcmiiXIrMS7Yq1vhHtRlryj1/OiCfa/UHG6LvRXnGQU3QJvG1ukFmLdnVkFCRTD4xxSRqVe0MuckS3EAWjPbo2OBtsRbNaH2dmZP1F8J5OggsTaJ6V5hIlg5PenH62RpnZ9OaiUzdAlT/Uuhs7fVzppzpDrHvq44ofqChdfzeOccUdKh3KdhShygQ6A0y6vQGqWq+iVLPRR0Wstb0rMh0lKEk05/hO28WFUX0V3r4YnLkKOm93NGOcGa0nfaHXQqGld8VnOh7wHGXV2hEF5cEltRVysSi39ZFxO6Lc/lmKePMISnrtjwTP0nwIkWmJdk1kjGi3e5aBNJ8ltJxnaWKnyAxFuzUyqdirkwxm8sgEOZtfAMfAIpT7uh4yidgrb7OP5nLPCLl3sVbTR2YZ/uJpmrG4CTTAWTyV2+ZDFAKxl4cvdUdu6C1RWNhcOq3VUbJsHK4+n1YAdDzyaLgoWww/nJ380+2EjYHBl4ZYzlnim0US4cqnWG8euPiZ/TtvyaGO+3w1jYVp26j/d6Qw269wW6yuLndIYx9VrrdXWss6vL4P49UCiBKv3QhtPgOJiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIie1F9d88L3czQbRwAAAABJRU5ErkJggg==');
+    }
+
+    .spinning-ring {
+      background-image: url('data:image/png;base64,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');
+      animation-name: spin;
+      animation-duration: 2500ms;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+    }
+
+    .loading-screen {
+      position: fixed;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      background: #fff;
+      z-index: 99999;
+    }</style><link href="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/css/react-style.5149aa17c8ed95b79596.css" data-module="local-seller-center-v3" rel="stylesheet"><link href="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/css/react18-style.38bd14b254bc25b0e891.css" data-module="local-seller-center-v3" rel="stylesheet"><link href="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/css/eds-style.d5a3b28a460b7c3e3e47.css" data-module="local-seller-center-v3" rel="stylesheet"><link href="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/css/vue-style.0fe06bb7e07db14ec653.css" data-module="local-seller-center-v3" rel="stylesheet"><link href="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/css/vue3-style.1b2072f8f02386909167.css" data-module="local-seller-center-v3" rel="stylesheet"><style>[class*=col]{min-width:0;margin-right:0;margin-left:0}[class*=col].col--grow{flex:1;max-width:100%}[class*=col].right{order:1}[class*=col].left{order:-1}.col-1{flex:0 0 6.25%;width:6.25%;max-width:6.25%}.col-2{flex:0 0 12.5%;width:12.5%;max-width:12.5%}.col-3{flex:0 0 18.75%;width:18.75%;max-width:18.75%}.col-4{flex:0 0 25%;width:25%;max-width:25%}.col-5{flex:0 0 31.25%;width:31.25%;max-width:31.25%}.col-6{flex:0 0 37.5%;width:37.5%;max-width:37.5%}.col-7{flex:0 0 43.75%;width:43.75%;max-width:43.75%}.col-8{flex:0 0 50%;width:50%;max-width:50%}.col-9{flex:0 0 56.25%;width:56.25%;max-width:56.25%}.col-10{flex:0 0 62.5%;width:62.5%;max-width:62.5%}.col-11{flex:0 0 68.75%;width:68.75%;max-width:68.75%}.col-12{flex:0 0 75%;width:75%;max-width:75%}.col-13{flex:0 0 81.25%;width:81.25%;max-width:81.25%}.col-14{flex:0 0 87.5%;width:87.5%;max-width:87.5%}.col-15{flex:0 0 93.75%;width:93.75%;max-width:93.75%}.col-16{flex:0 0 100%;width:100%;max-width:100%}.old-wrapper{width:1200px;margin:0 auto}.wrapper{width:1176px;margin:0 auto}.app-main-panel{margin:16px auto 0;background:#fff;border-radius:2px;box-shadow:0 1px 4px 0 rgba(0,0,0,.1)}.grid{display:flex;flex-wrap:wrap;align-content:normal;align-items:flex-start;justify-content:flex-start}</style><link data-module="local-seller-center-v3" rel="stylesheet" type="text/css" href="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/css/30.b326234f3239cb61fae4.css" crossorigin="anonymous"><script charset="utf-8" data-webpack="@local-seller-center/root:chunk-30" src="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/js/30.0572be2ab39bae1c6c12.js" crossorigin="anonymous" data-module="local-seller-center-v3"></script><style type="text/css">mmf-body { display: block; }
+mmf-head { display: none; }</style></head><body class=" "><div id="app" data-v-app=""><div><!----><div class="full-screen-container"><!----></div><div data-v-6b8b65b8="" class="shop-switcher-container toggle-off-sidebar-panel" style="top: 56px;"><!--v-if--><!-- 不能放到 ShopSwitcher 内部，否则在有 ShopSwitcher 的页面主动调用 switchShop 会导致页面无法滚动 --><!-- 正在切换店铺... --><!--v-if--></div><!--v-if--></div></div><script type="text/javascript">window.__performanceBodyScriptStartTime = Date.now();</script><script type="text/javascript" src="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/modules/sc-external-package/js/index.960cbc47d8ccb04d1d14.js" crossorigin="anonymous"></script><script type="text/javascript" src="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/js/runtime.6a1e57ca529b534779a1.js" crossorigin="anonymous"></script><script type="text/javascript" src="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/js/vue3-vendor.290d412e8cbd5f220bd2.js" crossorigin="anonymous"></script><script type="text/javascript">window.__performanceFrameworkScriptStartTime = Date.now();</script><script type="text/javascript" src="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/js/framework.91beec769554a2049cdd.js" crossorigin="anonymous"></script><script type="text/javascript" src="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/mmf_portal_seller_root_dir/static/portal/local-seller-center-v3/js/vue3-index.5f02afa894940cb3b707.js" crossorigin="anonymous"></script><script async="" src="https://deo.shopeemobile.com/shopee/shopee-trackingsdk-live-sg/@shopee/tracking-loader@1.1.26.min.js"></script></body></html>

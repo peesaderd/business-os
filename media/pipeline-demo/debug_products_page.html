@@ -1,0 +1,52 @@
+
+  <div class="page-header">
+    <div><h2>Product Recommendations</h2><p>TikTok Shop products with affiliate commission</p></div>
+    <button class="btn btn-primary btn-sm" onclick="loadAnalyzedProducts()">🔄 Refresh</button>
+  </div>
+  <div class="stats-grid" id="productStats">
+    <div class="stat-card"><div class="stat-value" id="prodTotal">-</div><div class="stat-label">Total Products</div></div>
+    <div class="stat-card"><div class="stat-value" id="prodAvgComm">-</div><div class="stat-label">Avg Commission</div></div>
+    <div class="stat-card"><div class="stat-value" id="prodTopComm">-</div><div class="stat-label">Max Commission</div></div>
+    <div class="stat-card"><div class="stat-value" id="prodTotalSold">-</div><div class="stat-label">Total Sold</div></div>
+  </div>
+
+  <div class="card mb-3" style="padding:14px">
+    <div class="card-title mb-2" style="display:flex;justify-content:space-between;align-items:center">
+      <span>📊 Google Sheets Import</span>
+      <span id="sheetsStatusBadge" class="badge badge-red" style="background:var(--bg-tertiary);color:var(--text-secondary);font-size:11px">❌ ไม่ได้ตั้งค่า</span>
+    </div>
+
+    <!-- Step 1: เลือก Spreadsheet + Open -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <input class="input" id="sheetsSpreadsheetId" placeholder="Spreadsheet ID (จาก URL .../d/{ID}/edit)" value="" style="flex: 1 1 0%; min-width: 200px;">
+      <button class="btn btn-secondary btn-sm" onclick="window.open('https://docs.google.com/spreadsheets/d/'+document.getElementById('sheetsSpreadsheetId').value,'_blank')" title="เปิด Google Sheet">🔗 Open Sheet</button>
+      <button class="btn btn-secondary btn-sm" id="sheetsConnectBtn" onclick="connectSheet()">🔄 เชื่อมต่อ</button>
+    </div>
+
+    <!-- Step 2: เลือก Sheet name + Map columns (แสดงหลังเชื่อมต่อ) -->
+    <div id="sheetsConfigArea" style="display:none;margin-top:8px;padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-lg)">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <label style="font-size:12px;font-weight:500;min-width:60px">📄 Sheet:</label>
+        <select class="input" id="sheetsSheetSelector" style="flex:1;min-width:150px"></select>
+      </div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:6px">🧩 Map Columns (field → คอลัมน์ใน Sheet)</div>
+      <div id="sheetsFieldMapping" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label style="font-size:11px;color:var(--text-secondary)">ชื่อสินค้า (title)</label><input class="input" id="map_title" value="ชื่อสินค้า" placeholder="column name" style="font-size: 12px; padding: 5px 8px;"></div>
+        <div><label style="font-size:11px;color:var(--text-secondary)">ราคา (price)</label><input class="input" id="map_price" value="ราคา" placeholder="column name" style="font-size: 12px; padding: 5px 8px;"></div>
+        <div><label style="font-size:11px;color:var(--text-secondary)">ลิงก์/URL (url)</label><input class="input" id="map_url" value="ลิงก์" placeholder="column name" style="font-size: 12px; padding: 5px 8px;"></div>
+        <div><label style="font-size:11px;color:var(--text-secondary)">หมวดหมู่ (category)</label><input class="input" id="map_category" value="หมวดหมู่" placeholder="column name" style="font-size: 12px; padding: 5px 8px;"></div>
+        <div><label style="font-size:11px;color:var(--text-secondary)">รูปภาพ (image_url)</label><input class="input" id="map_image_url" value="รูปภาพ" placeholder="column name" style="font-size: 12px; padding: 5px 8px;"></div>
+        <div><label style="font-size:11px;color:var(--text-secondary)">Commission (%)</label><input class="input" id="map_commission" value="คอมมิชชั่น" placeholder="column name" style="font-size: 12px; padding: 5px 8px;"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-primary btn-sm" onclick="importFromSheets()">📥 Import Products</button>
+      </div>
+    </div>
+
+    <div id="sheetsResult" class="text-xs text-secondary mt-2"></div>
+  </div>
+
+  <div id="productGrid" class="product-grid">
+    <div class="skeleton skeleton-line"></div>
+    <div class="skeleton skeleton-line"></div>
+  </div>

@@ -1,0 +1,21 @@
+{
+  "success": false,
+  "elapsed_seconds": 3,
+  "video_url": null,
+  "api_calls_total": 20,
+  "api_calls_failed": 12,
+  "failed_endpoints": [
+    "https://openhands.m2igen.com/api/tiktok/dashboard/track-event",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1729858177955498178_24e2.webp",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1730620339309808598_0a65.webp",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1730014506458516368_0.jpg",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1732766220378998285_1.jpg",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1730030253036177515_2.jpg",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1729769226259696006_1.jpg",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1730785954037467758_0.jpg",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1730001957719280593_0.jpeg",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1734400948172129805_0.jpeg",
+    "https://openhands.m2igen.com/api/tiktok/ugc/static/product_images/1729858177955498178_24e2.webp",
+    "https://openhands.m2igen.com/api/tiktok/ugc/scripts/generate"
+  ]
+}

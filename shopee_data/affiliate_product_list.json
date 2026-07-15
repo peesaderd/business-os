@@ -1,0 +1,107 @@
+{
+  "category": "สินค้าแนะนำสำหรับ TikTok Affiliate - ไทย",
+  "date": "2026-06-25",
+  "criteria": "ราคา 100-450 บาท | Commission ~15-25% | Visual Potential สูง",
+  "products": [
+    {
+      "no": 1,
+      "name": "ครีมกันแดดคุมมัน DOUBLE",
+      "price_range": "199-299",
+      "category": "ความงาม",
+      "commission_est": "15-20%",
+      "content_type": "Before-After",
+      "script_hook": "หน้ามันทั้งวัน? ลองตัวนี้ก่อนไปทำงาน!",
+      "platform": "Shopee"
+    },
+    {
+      "no": 2,
+      "name": "แปรงล้างหน้ารีฟิลได้",
+      "price_range": "150-350",
+      "category": "ความงาม",
+      "commission_est": "20-25%",
+      "content_type": "ASMR / Satisfying",
+      "script_hook": "ฟองนุ่มๆ เสียงดังฟังชิล แถมหน้าใส!",
+      "platform": "Shopee"
+    },
+    {
+      "no": 3,
+      "name": "ที่ดูดฝุ่นไร้สายรุ่นเล็ก",
+      "price_range": "299-450",
+      "category": "ของใช้ในบ้าน",
+      "commission_est": "15-20%",
+      "content_type": "ASMR / Problem-Solving",
+      "script_hook": "ดูดฝุ่นโต๊ะ ดูดเศษขนม แค่ชาร์จครั้งเดียวจบ",
+      "platform": "Shopee"
+    },
+    {
+      "no": 4,
+      "name": "น้ำยาขจัดคราบฝังลึก",
+      "price_range": "120-250",
+      "category": "ของใช้ในบ้าน",
+      "commission_est": "15-25%",
+      "content_type": "Problem-Solving / Before-After",
+      "script_hook": "คราบฝัง 10 ปี หายใน 5 นาที!",
+      "platform": "Shopee"
+    },
+    {
+      "no": 5,
+      "name": "เครื่องนวดหน้ารุ่นพกพา",
+      "price_range": "199-399",
+      "category": "ความงาม",
+      "commission_est": "20-25%",
+      "content_type": "Before-After / ASMR",
+      "script_hook": "นวดหน้าทุกเช้า เห็นผล 7 วัน",
+      "platform": "Shopee"
+    },
+    {
+      "no": 6,
+      "name": "สติ๊กเกอร์ติดผนัง 3D",
+      "price_range": "100-250",
+      "category": "ของแต่งบ้าน",
+      "commission_est": "20-30%",
+      "content_type": "Satisfying / Time-lapse",
+      "script_hook": "ห้องโทรมๆ แปะสติ๊กเกอร์ก็ปังได้!",
+      "platform": "Shopee"
+    },
+    {
+      "no": 7,
+      "name": "แก้วน้ำเก็บความเย็น 24 ชม.",
+      "price_range": "199-399",
+      "category": "ของใช้ทั่วไป",
+      "commission_est": "15-20%",
+      "content_type": "Unboxing / Review",
+      "script_hook": "น้ำแข็งไม่ละลายทั้งวัน จริงหรอ?",
+      "platform": "Shopee"
+    },
+    {
+      "no": 8,
+      "name": "เครื่องทำน้ำอุ่นขนาดพกพา",
+      "price_range": "299-450",
+      "category": "ของใช้ในบ้าน",
+      "commission_est": "15-20%",
+      "content_type": "Problem-Solving / Demo",
+      "script_hook": "ไม่อยากต้มน้ำอีกต่อไป เปิดนี้ได้เลย!",
+      "platform": "Shopee"
+    },
+    {
+      "no": 9,
+      "name": "เจลแต้มสิวสูตรเข้มข้น",
+      "price_range": "150-350",
+      "category": "ความงาม",
+      "commission_est": "20-25%",
+      "content_type": "Before-After",
+      "script_hook": "สิวอักเสบลดใน 1 คืน ลองเลย!",
+      "platform": "Shopee"
+    },
+    {
+      "no": 10,
+      "name": "ไม้กวาดไฟฟ้าขนาดเล็ก",
+      "price_range": "199-350",
+      "category": "ของใช้ในบ้าน",
+      "commission_est": "15-20%",
+      "content_type": "ASMR / Satisfying",
+      "script_hook": "กวาดขนแมว ขนหมา หมดกังวล!",
+      "platform": "Shopee"
+    }
+  ]
+}

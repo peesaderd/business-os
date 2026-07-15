@@ -32,3 +32,4 @@ data/
 *.tmp
 .tmp/
 services/wpilot-engine/.env
+.aider*

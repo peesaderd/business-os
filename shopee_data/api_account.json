@@ -1,0 +1,14 @@
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "shop_id": 170343041,
+    "user_id": 170345404,
+    "user_name": "peerawatkaewko",
+    "email": "peesaderd@gmail.com",
+    "account_type": 0,
+    "is_new": 1,
+    "region": "th",
+    "is_cb": false
+  }
+}

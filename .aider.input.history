@@ -4,3 +4,201 @@
 
 # 2026-06-15 12:07:03.129453
 +Hello world - respond with OK only
+
+# 2026-06-17 22:27:33.644156
++Add pipeline recipe templates system:
++
++1. Add RECIPE_TEMPLATES dict and GET /pipeline/recipes endpoint in main.py
++2. Add recipe picker UI and JS in index.html
++
++### Backend change in main.py (add before the routes section):
++
++```python
++RECIPE_TEMPLATES = {
++    'skincare': {'name': 'skincare', 'label': '🧴 Skincare Glow', 'description': 'Soft luxury vibes, calm music, slow transitions', 'ugc_style': 'product_usage', 'sound_style': 'luxury_jazz', 'mood': 'calm', 'duration': 10, 'bgm_style': 'luxury_jazz'},
++    'gadget': {'name': 'gadget', 'label': '📱 Gadget Unboxing', 'description': 'Fast-paced, energetic, quick cuts', 'ugc_style': 'holding_product', 'sound_style': 'upbeat_pop', 'mood': 'energetic', 'duration': 8, 'bgm_style': 'upbeat_pop'},
++    'fashion': {'name': 'fashion', 'label': '👗 Fashion Lookbook', 'description': 'Elegant slow-mo, chic aesthetic', 'ugc_style': 'talking_head', 'sound_style': 'chill_loft', 'mood': 'luxurious', 'duration': 8, 'bgm_style': 'chill_loft'},
++    'food': {'name': 'food', 'label': '🍜 Food Review', 'description': 'Warm ASMR-style close-up shots', 'ugc_style': 'ugc_review', 'sound_style': 'asmr', 'mood': 'fun', 'duration': 10, 'bgm_style': 'asmr'},
++    'asmr': {'name': 'asmr', 'label': '🎧 ASMR Unboxing', 'description': 'Quiet ambient gentle sounds relaxing', 'ugc_style': 'product_usage', 'sound_style': 'asmr', 'mood': 'calm', 'duration': 12, 'bgm_style': 'asmr'},
++}
++
++@app.get('/pipeline/recipes')
++def get_recipes():
++    return {'recipes': list(RECIPE_TEMPLATES.values())}
++```
++
++### Frontend changes in index.html:
++
++In the Content tab, near the generate form (look for style-select-grid and sound style):
++1. Add BEFORE the existing style-select-grid: a div with id="recipePicker" showing recipe cards
++2. Add hidden input: <input type="hidden" id="selectedRecipe" value="gadget">
++3. Add JS function loadRecipes() that fetches GET /pipeline/recipes and populates recipePicker
++4. Add JS function selectRecipe(name) that highlights the card
++5. Call loadRecipes() in the DOMContentLoaded init section
++6. When generating video, send recipe name as 'recipe' in the request body
++
++Recipe cards CSS should use existing .style-card class layout:
++<div class="style-card selected" data-recipe="gadget" onclick="selectRecipe('\''gadget'"')" title="Fast-paced energetic quick cuts">
++  <div style="font-size:24px">📱</div>
++  <div class="font-medium" style="font-size:12px">Gadget Unboxing</div>
++  <div class="text-xs text-secondary">Fast-paced quick cuts</div>
++</div>
++
++Keep the existing style-select-grid and advanced options below the recipe picker.
++Recipe selection is a shortcut that pre-fills style/sound/mood/duration in the form.
+
+# 2026-06-17 22:27:33.645403
++Add pipeline recipe templates system:
++
++1. Add RECIPE_TEMPLATES dict and GET /pipeline/recipes endpoint in main.py
++2. Add recipe picker UI and JS in index.html
++
++### Backend change in main.py (add before the routes section):
++
++```python
++RECIPE_TEMPLATES = {
++    'skincare': {'name': 'skincare', 'label': '🧴 Skincare Glow', 'description': 'Soft luxury vibes, calm music, slow transitions', 'ugc_style': 'product_usage', 'sound_style': 'luxury_jazz', 'mood': 'calm', 'duration': 10, 'bgm_style': 'luxury_jazz'},
++    'gadget': {'name': 'gadget', 'label': '📱 Gadget Unboxing', 'description': 'Fast-paced, energetic, quick cuts', 'ugc_style': 'holding_product', 'sound_style': 'upbeat_pop', 'mood': 'energetic', 'duration': 8, 'bgm_style': 'upbeat_pop'},
++    'fashion': {'name': 'fashion', 'label': '👗 Fashion Lookbook', 'description': 'Elegant slow-mo, chic aesthetic', 'ugc_style': 'talking_head', 'sound_style': 'chill_loft', 'mood': 'luxurious', 'duration': 8, 'bgm_style': 'chill_loft'},
++    'food': {'name': 'food', 'label': '🍜 Food Review', 'description': 'Warm ASMR-style close-up shots', 'ugc_style': 'ugc_review', 'sound_style': 'asmr', 'mood': 'fun', 'duration': 10, 'bgm_style': 'asmr'},
++    'asmr': {'name': 'asmr', 'label': '🎧 ASMR Unboxing', 'description': 'Quiet ambient gentle sounds relaxing', 'ugc_style': 'product_usage', 'sound_style': 'asmr', 'mood': 'calm', 'duration': 12, 'bgm_style': 'asmr'},
++}
++
++@app.get('/pipeline/recipes')
++def get_recipes():
++    return {'recipes': list(RECIPE_TEMPLATES.values())}
++```
++
++### Frontend changes in index.html:
++
++In the Content tab, near the generate form (look for style-select-grid and sound style):
++1. Add BEFORE the existing style-select-grid: a div with id="recipePicker" showing recipe cards
++2. Add hidden input: <input type="hidden" id="selectedRecipe" value="gadget">
++3. Add JS function loadRecipes() that fetches GET /pipeline/recipes and populates recipePicker
++4. Add JS function selectRecipe(name) that highlights the card
++5. Call loadRecipes() in the DOMContentLoaded init section
++6. When generating video, send recipe name as 'recipe' in the request body
++
++Recipe cards CSS should use existing .style-card class layout:
++<div class="style-card selected" data-recipe="gadget" onclick="selectRecipe('\''gadget'"')" title="Fast-paced energetic quick cuts">
++  <div style="font-size:24px">📱</div>
++  <div class="font-medium" style="font-size:12px">Gadget Unboxing</div>
++  <div class="text-xs text-secondary">Fast-paced quick cuts</div>
++</div>
++
++Keep the existing style-select-grid and advanced options below the recipe picker.
++Recipe selection is a shortcut that pre-fills style/sound/mood/duration in the form.
+
+# 2026-07-06 01:58:01.854078
++Just reply with: KEY_WORKS
+
+# 2026-07-06 01:58:01.855069
++Just reply with: KEY_WORKS
+
+# 2026-07-06 01:58:20.701331
++Just reply with: KEY_WORKS
+
+# 2026-07-06 01:58:20.701446
++Just reply with: KEY_WORKS
+
+# 2026-07-06 07:51:59.662700
++print('hello from aider via opencode proxy')
+
+# 2026-07-06 07:51:59.662787
++print('hello from aider via opencode proxy')
+
+# 2026-07-06 07:52:59.938593
++say hi in 3 words
+
+# 2026-07-06 07:52:59.939213
++say hi in 3 words
+
+# 2026-07-06 07:53:19.002199
++say hi in 2 words
+
+# 2026-07-06 07:53:19.002291
++say hi in 2 words
+
+# 2026-07-06 07:53:57.423188
++reply with exactly 'Hello World'
+
+# 2026-07-06 07:53:57.423337
++reply with exactly 'Hello World'
+
+# 2026-07-06 07:56:53.807189
++reply with exactly 'Hello World'
+
+# 2026-07-06 07:56:53.808911
++reply with exactly 'Hello World'
+
+# 2026-07-06 07:57:34.804212
++hi
+
+# 2026-07-06 07:57:34.804313
++hi
+
+# 2026-07-06 07:57:58.230965
++hi
+
+# 2026-07-06 07:57:58.231086
++hi
+
+# 2026-07-06 07:58:36.038648
++hi
+
+# 2026-07-06 07:58:36.038761
++hi
+
+# 2026-07-06 07:58:59.189419
++reply with exactly 'Hello World'
+
+# 2026-07-06 07:58:59.193492
++reply with exactly 'Hello World'
+
+# 2026-07-06 07:59:23.123486
++hello
+
+# 2026-07-06 07:59:23.127654
++hello
+
+# 2026-07-06 07:59:52.996859
++reply hi
+
+# 2026-07-06 07:59:53.002006
++reply hi
+
+# 2026-07-06 08:00:30.355932
++reply with just the word: hello
+
+# 2026-07-06 08:00:30.356541
++reply with just the word: hello
+
+# 2026-07-06 08:00:56.044988
++reply with just the word hello
+
+# 2026-07-06 08:00:56.046259
++reply with just the word hello
+
+# 2026-07-06 08:01:19.496060
++say hello
+
+# 2026-07-06 08:01:19.496163
++say hello
+
+# 2026-07-06 08:02:25.909592
++reply with just: Hello
+
+# 2026-07-06 08:02:25.911077
++reply with just: Hello
+
+# 2026-07-06 08:05:56.212927
++just reply: OK
+
+# 2026-07-06 08:05:56.213843
++just reply: OK
+
+# 2026-07-06 08:11:47.031454
++OK
+
+# 2026-07-06 08:11:47.036247
++OK

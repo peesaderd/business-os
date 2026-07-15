@@ -1,0 +1,72 @@
+[
+  {
+    "product": "ครีมกันแดดเนื้อบางเบา",
+    "tiktok_hook": "กันแดดแล้วไม่มัน? มีจริง!",
+    "niche": "Beauty",
+    "commission": "20-25%",
+    "price_range": "150-450"
+  },
+  {
+    "product": "พัดลมคอห่านพกพา",
+    "tiktok_hook": "พกไปไหนก็เย็นฉ่ำ",
+    "niche": "Gadget",
+    "commission": "15-20%",
+    "price_range": "199-450"
+  },
+  {
+    "product": "กระบอกน้ำเก็บความเย็น 24hr",
+    "tiktok_hook": "วันๆ ดื่มน้ำ 2 ลิตรไม่ต้องเติม",
+    "niche": "Lifestyle",
+    "commission": "15-20%",
+    "price_range": "150-350"
+  },
+  {
+    "product": "หูฟังไร้สายราคาหลักร้อย",
+    "tiktok_hook": "ฟังเพลงชิลๆ ไม่ต้องเสียตังเยอะ",
+    "niche": "Tech",
+    "commission": "15-20%",
+    "price_range": "199-450"
+  },
+  {
+    "product": "อุปกรณ์จัดระเบียบสายไฟ",
+    "tiktok_hook": "โต๊ะรก? จัดสายไฟนี่แหละคำตอบ",
+    "niche": "Home",
+    "commission": "15-25%",
+    "price_range": "100-300"
+  },
+  {
+    "product": "หน้ากากอนามัยลายน่ารัก",
+    "tiktok_hook": "ออกงานยังไงให้ปัง? แมสลายนี้!",
+    "niche": "Fashion",
+    "commission": "15-20%",
+    "price_range": "100-350"
+  },
+  {
+    "product": "ของใช้ในครัวประหยัดเนื้อที่",
+    "tiktok_hook": "ห้องเล็กแต่ครัวต้องครบ!",
+    "niche": "Home",
+    "commission": "15-25%",
+    "price_range": "100-300"
+  },
+  {
+    "product": "เครื่องดูดฝุ่นไร้สายขนาดกะทัดรัด",
+    "tiktok_hook": "สาวคอนโดต้องมี!",
+    "niche": "Home",
+    "commission": "15-20%",
+    "price_range": "199-450"
+  },
+  {
+    "product": "อุปกรณ์นวดผ่อนคลาย",
+    "tiktok_hook": "เมื่อยทั้งวัน? นี่คือเพื่อนรัก",
+    "niche": "Health",
+    "commission": "20-25%",
+    "price_range": "250-450"
+  },
+  {
+    "product": "เจลแต้มสิวสูตรเด็ด",
+    "tiktok_hook": "สิวเห่อ! แต้มก่อนนอน ตื่นมาหาย",
+    "niche": "Beauty",
+    "commission": "20-25%",
+    "price_range": "150-450"
+  }
+]
