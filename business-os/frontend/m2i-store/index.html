@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<meta name="theme-color" content="#1e0a3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="M2I Store">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="M2I Store">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<title>M2I App Store — Desktop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0a0818;
+  --bg-secondary:#100d24;
+  --bg-elevated:#1a1535;
+  --bg-card:rgba(255,255,255,.08);
+  --bg-card-hover:rgba(255,255,255,.13);
+  --brand:#8b5cf6;
+  --brand-light:#a78bfa;
+  --brand-glow:rgba(139,92,246,.35);
+  --accent:#60a5fa;
+  --accent-glow:rgba(96,165,250,.25);
+  --accent-green:#34d399;
+  --accent-orange:#fb923c;
+  --accent-pink:#f472b6;
+  --accent-cyan:#22d3ee;
+  --text:#ffffff;
+  --text-secondary:rgba(255,255,255,.85);
+  --text-tertiary:rgba(241,240,250,.5);
+  --border:rgba(255,255,255,.06);
+  --border-light:rgba(255,255,255,.04);
+  --shadow:0 4px 20px rgba(0,0,0,.3);
+  --radius:16px;
+  --radius-sm:12px;
+  --radius-xs:8px;
+  --sidebar-width:240px;
+  --header-height:64px;
+  --font-display:'Prompt',sans-serif;
+  --font-body:'Sarabun',sans-serif;
+  --font-eng:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+
+[data-theme="light"]{
+  --bg:#f2f2f7;
+  --bg-secondary:#ffffff;
+  --bg-elevated:#ffffff;
+  --bg-card:rgba(0,0,0,.05);
+  --bg-card-hover:rgba(0,0,0,.09);
+  --brand:#7c3aed;
+  --brand-light:#6d28d9;
+  --brand-glow:rgba(124,58,237,.18);
+  --accent:#2563eb;
+  --accent-glow:rgba(37,99,235,.15);
+  --accent-green:#059669;
+  --accent-orange:#ea580c;
+  --accent-pink:#db2777;
+  --accent-cyan:#0891b2;
+  --text:#1d1d1f;
+  --text-secondary:rgba(29,29,31,.7);
+  --text-tertiary:rgba(29,29,31,.45);
+  --border:rgba(0,0,0,.08);
+  --border-light:rgba(0,0,0,.04);
+  --shadow:0 4px 20px rgba(0,0,0,.08);
+}
+[data-theme="light"] .mobile-bottom-nav{background:rgba(255,255,255,.95);backdrop-filter:blur(20px)}
+[data-theme="light"] .search-desktop input{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.1)}
+[data-theme="light"] .h-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12)}
+[data-theme="light"] .today-hero-bg::before{background:radial-gradient(ellipse 70% 80% at 30% 30%,rgba(124,58,237,.08),transparent 70%)}
+[data-theme="light"] .today-hero-bg .orb{opacity:.08}
+[data-theme="light"] .today-hero-text h2{color:#ffffff!important}
+[data-theme="light"] .today-hero-text p{color:rgba(255,255,255,.85)!important}
+[data-theme="light"] .category-chip-desktop{background:var(--card-bg,rgba(0,0,0,.05))}
+[data-theme="light"] .category-chip-desktop:hover{background:rgba(139,92,246,.1)}
+[data-theme="light"] .category-chip-desktop.active{background:var(--brand);color:#fff}
+[data-theme="light"] .profile-card,[data-theme="light"] .profile-links,[data-theme="light"] .profile-empty,[data-theme="light"] .modal-card,[data-theme="light"] .detail-header{border-color:var(--border)}
+[data-theme="light"] .admin-table-wrap td,[data-theme="light"] .invoice-row.total{border-color:var(--border-light)}
+[data-theme="light"] .modal-field input{background:var(--bg);border-color:var(--border)}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;letter-spacing:-.01em}
+.eng{font-family:var(--font-eng)}
+
+/* ===== LAYOUT ===== */
+.app-layout{display:flex;height:100dvh;height:100vh;overflow:hidden}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:var(--sidebar-width);background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:relative;z-index:10}
+.sidebar-logo{padding:20px 20px 24px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.04)}
+.sidebar-logo svg{width:32px;height:32px;flex-shrink:0}
+.sidebar-logo span{font-family:var(--font-eng);font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--brand),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
+.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-xs);border:none;background:none;color:var(--text-tertiary);cursor:pointer;transition:all .15s;font-family:var(--font-body);font-size:14px;position:relative}
+.nav-item:hover{background:var(--bg-card);color:var(--text-secondary)}
+.nav-item.active{background:rgba(139,92,246,.15);color:var(--brand-light)}
+.nav-item svg{width:20px;height:20px;flex-shrink:0}
+.nav-item .badge{position:absolute;right:12px;min-width:18px;height:18px;border-radius:9px;background:var(--accent-pink);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.nav-section-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);padding:16px 14px 6px;opacity:.5}
+.sidebar-bottom{padding:12px 10px;border-top:1px solid var(--border-light)}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--radius-xs);cursor:pointer;transition:.15s}
+.sidebar-user:hover{background:var(--bg-card)}
+.sidebar-user-avatar{width:32px;height:32px;border-radius:50%;overflow:hidden;border:2px solid var(--brand);flex-shrink:0}
+.sidebar-user-avatar img{width:100%;height:100%;object-fit:cover}
+.sidebar-user-info{flex:1;min-width:0}
+.sidebar-user-name{font-size:13px;font-weight:600}
+.sidebar-user-role{font-size:11px;color:var(--text-tertiary)}
+
+/* ===== MAIN ===== */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ===== HEADER ===== */
+.main-header{height:var(--header-height);display:flex;align-items:center;gap:20px;padding:0 32px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg-secondary)}
+.search-desktop{flex:1;max-width:480px;position:relative}
+.search-desktop input{width:100%;height:40px;padding:0 16px 0 40px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;transition:.2s}
+.search-desktop input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-glow);background:var(--bg-elevated)}
+.search-desktop svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-tertiary);width:16px;height:16px}
+.header-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.header-action-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.header-action-btn:hover{background:var(--bg-card-hover);color:var(--text)}
+.header-avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;border:2px solid var(--brand);cursor:pointer;transition:.2s;margin-left:8px}
+.header-avatar:hover{border-color:var(--brand-light);transform:scale(1.05)}
+.header-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* ===== SCROLL CONTENT ===== */
+.main-scroll{flex:1;overflow-y:auto;padding:28px 32px 32px}
+
+/* ===== TODAY HERO ===== */
+.today-hero{display:flex;border-radius:var(--radius);overflow:hidden;min-height:140px;position:relative;margin-bottom:24px;cursor:pointer}
+.today-hero-bg{position:absolute;inset:0;background:linear-gradient(160deg,#2d1060,#150a35);border-radius:var(--radius)}
+.today-hero-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 80% at 25% 50%,var(--brand-glow),transparent 70%)}
+.today-hero-bg .orb{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,var(--brand-glow),transparent 70%);top:-100px;right:-60px;animation:orbFloat 6s ease-in-out infinite}
+.today-hero-bg .orb2{width:180px;height:180px;background:radial-gradient(circle,var(--accent-glow),transparent 70%);bottom:-60px;left:35%;animation:orbFloat 8s ease-in-out infinite reverse}
+@keyframes orbFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-12px) scale(1.05)}}
+.today-hero-content{position:relative;z-index:1;padding:24px 28px;display:flex;gap:28px;align-items:center;width:100%}
+.today-hero-text{flex:1}
+.today-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;background:var(--brand);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+.today-hero-text h2{font-size:24px;font-weight:800;line-height:1.2;margin-bottom:6px;color:#ffffff!important}
+.today-hero-text p{font-family:var(--font-body);font-size:14px;color:rgba(255,255,255,.85)!important;line-height:1.5;max-width:480px;margin-bottom:14px}
+.today-cta{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--brand),#6d28d9);color:#fff;font-family:var(--font-body);font-weight:600;font-size:14px;cursor:pointer;transition:.3s}
+.today-cta:hover{transform:translateY(-2px);box-shadow:0 6px 30px var(--brand-glow)}
+.today-hero-art{width:120px;height:120px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.today-hero-art .icon-circle{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#6d28d9,#a855f7);display:flex;align-items:center;justify-content:center}
+.today-hero-art .icon-circle svg{width:32px;height:32px;stroke:#fff;stroke-width:2;stroke-linecap:round;fill:none}
+
+/* ===== CATEGORY CHIPS ===== */
+.category-row-desktop{display:flex;gap:8px;margin-bottom:24px;overflow-x:auto;flex-wrap:nowrap;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;padding:0}
+.category-row-desktop::-webkit-scrollbar{display:none;width:0;height:0}
+.recent-search-pills{display:flex;flex-wrap:wrap;gap:10px}
+.recent-search-pill{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;background:var(--card-bg,rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:.2s;font-size:14px;color:var(--text);font-family:var(--font-body)}
+.recent-search-pill:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+.recent-search-pill-rm{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:inherit;opacity:.4;transition:.15s;cursor:pointer;flex-shrink:0}
+.recent-search-pill-rm:hover{opacity:1;background:rgba(0,0,0,.2)}
+.category-chip-desktop{display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:20px;background:var(--card-bg,rgba(255,255,255,.08));color:var(--text);font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;transition:all .25s ease;white-space:nowrap;user-select:none;border:none;line-height:1.3}
+.category-chip-desktop:hover{background:rgba(139,92,246,.12);color:var(--brand-light)}
+.category-chip-desktop.active{background:var(--brand);color:#fff}
+.category-chip-desktop svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.category-chip-desktop.active svg{opacity:1}
+
+/* ===== SECTION ===== */
+.section{margin-bottom:32px}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.section-title{font-size:22px;font-weight:700}
+.section-link{font-family:var(--font-body);font-size:14px;color:var(--brand-light);cursor:pointer;background:none;border:none;transition:.2s}
+.section-link:hover{color:var(--accent)}
+
+/* ===== HORIZONTAL SCROLL ===== */
+.h-scroll{display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+.h-scroll::-webkit-scrollbar{height:5px}
+.h-scroll::-webkit-scrollbar-track{background:transparent}
+.h-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+.h-scroll > *{flex-shrink:0}
+
+/* ===== APP CARD ===== */
+.app-card-desktop{width:176px;border-radius:var(--radius-sm);background:var(--bg-card);padding:16px;cursor:pointer;transition:.25s;border:1px solid transparent}
+.app-card-desktop:hover{background:var(--bg-card-hover);border-color:rgba(139,92,246,.2);transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.app-card-desktop .card-icon{width:64px;height:64px;border-radius:var(--radius-xs);margin-bottom:10px;display:flex;align-items:center;justify-content:center}
+.app-card-desktop .card-icon svg{width:32px;height:32px}
+.app-card-desktop .card-name{font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-card-desktop .card-desc{font-family:var(--font-body);font-size:12px;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:8px}
+.app-card-desktop .card-bottom{display:flex;justify-content:space-between;align-items:center}
+.app-card-desktop .card-price{font-family:var(--font-eng);font-size:13px;font-weight:600;color:var(--accent-green)}
+.app-card-desktop .card-price.free{color:var(--accent-green)}
+.app-card-desktop .card-chip{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--accent-orange);color:#000}
+.app-card-desktop .card-action{opacity:0;transition:.2s;width:28px;height:28px;border-radius:50%;border:none;background:var(--brand);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.app-card-desktop:hover .card-action{opacity:1}
+
+/* ===== APP GRID ===== */
+.app-grid-desktop{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.grid-card-desktop{background:var(--bg-card);border-radius:var(--radius-sm);padding:18px;cursor:pointer;transition:.25s;border:1px solid transparent}
+.grid-card-desktop:hover{background:var(--bg-card-hover);border-color:rgba(139,92,246,.15);transform:translateY(-3px);box-shadow:0 6px 25px rgba(0,0,0,.25)}
+.grid-card-desktop .card-icon{width:56px;height:56px;border-radius:var(--radius-xs);margin-bottom:10px;display:flex;align-items:center;justify-content:center}
+.grid-card-desktop .card-icon svg{width:28px;height:28px}
+.grid-card-desktop .card-name{font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:3px}
+.grid-card-desktop .card-desc{font-family:var(--font-body);font-size:12px;color:var(--text-tertiary);margin-bottom:8px}
+.grid-card-desktop .card-bottom{display:flex;justify-content:space-between;align-items:center}
+.grid-card-desktop .card-price{font-family:var(--font-eng);font-size:13px;font-weight:600;color:var(--accent-green)}
+.grid-card-desktop .card-price.free{color:var(--accent-green)}
+
+/* ===== DETAIL PAGE ===== */
+.detail-page-desktop{padding:0}
+.detail-back-desktop{display:flex;align-items:center;gap:8px;padding:0 0 16px;background:none;border:none;color:var(--text-secondary);font-family:var(--font-body);font-size:14px;cursor:pointer;transition:.15s}
+.detail-back-desktop:hover{color:var(--text)}
+.detail-header{display:flex;gap:24px;background:var(--bg-elevated);border-radius:var(--radius);padding:28px;margin-bottom:24px;align-items:flex-start;border:1px solid rgba(255,255,255,.05)}
+.detail-header .detail-icon{width:88px;height:88px;border-radius:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.detail-header .detail-icon svg{width:44px;height:44px}
+.detail-header-info{flex:1}
+.detail-header-info h1{font-size:26px;font-weight:700;margin-bottom:4px}
+.detail-header-info .detail-dev{font-size:15px;color:var(--text-secondary);margin-bottom:12px}
+.detail-stats{display:flex;gap:20px;margin-bottom:16px}
+.detail-stat{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-secondary)}
+.detail-stat svg{width:16px;height:16px}
+.detail-download{display:inline-flex;align-items:center;gap:10px;padding:12px 32px;border-radius:24px;border:none;background:linear-gradient(135deg,var(--brand),#6d28d9);color:#fff;font-family:var(--font-body);font-weight:600;font-size:15px;cursor:pointer;transition:.3s}
+.detail-download:hover{transform:translateY(-2px);box-shadow:0 6px 25px var(--brand-glow)}
+
+.detail-screenshots{display:flex;gap:12px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none}
+.detail-screenshots::-webkit-scrollbar{display:none}
+.detail-screenshots-img{width:220px;height:150px;border-radius:12px;object-fit:cover;cursor:pointer;transition:transform .2s;flex-shrink:0}
+.detail-screenshots-img:hover{transform:scale(1.02)}
+.detail-description{line-height:1.8;color:var(--text-secondary);font-size:15px;max-width:720px}
+
+/* ===== CHECKOUT PAGE ===== */
+.checkout-layout-desktop{max-width:600px}
+.checkout-layout-desktop h1{font-size:28px;font-weight:700;margin-bottom:6px}
+.checkout-layout-desktop .security-note{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--accent-green);margin-bottom:24px}
+.checkout-layout-desktop .security-note svg{width:16px;height:16px}
+.checkout-card{background:var(--bg-elevated);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.checkout-card .app-row{display:flex;gap:14px;align-items:center}
+.checkout-card .app-row .icon{width:52px;height:52px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.checkout-card .app-row .icon svg{width:26px;height:26px}
+.checkout-card .app-row .info .name{font-size:16px;font-weight:600}
+.checkout-card .app-row .info .dev{font-size:13px;color:var(--text-secondary)}
+.invoice-card{background:var(--bg-elevated);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.invoice-card .inv-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-tertiary);margin-bottom:12px}
+.invoice-row{display:flex;justify-content:space-between;padding:8px 0;font-size:15px}
+.invoice-row.total{padding-top:14px;margin-top:14px;border-top:1px solid rgba(255,255,255,.08);font-size:17px;font-weight:700}
+.pay-btn-desktop{width:100%;padding:14px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,var(--brand),#6d28d9);color:#fff;font-family:var(--font-body);font-weight:600;font-size:16px;cursor:pointer;transition:.3s}
+.pay-btn-desktop:hover{transform:translateY(-2px);box-shadow:0 6px 30px var(--brand-glow)}
+.sandbox-note{text-align:center;margin-top:12px;padding:10px;border-radius:var(--radius-xs);background:rgba(251,191,36,.1);color:var(--accent-orange);font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* ===== ADMIN ===== */
+.admin-header-desktop{margin-bottom:24px}
+.admin-header-desktop h1{font-size:28px;font-weight:700}
+.admin-header-desktop p{font-size:15px;color:var(--text-secondary);margin-top:2px}
+.admin-tabs-desktop{display:flex;gap:4px;background:var(--bg-elevated);border-radius:var(--radius-sm);padding:5px;margin-bottom:20px;width:fit-content}
+.admin-tab-desktop{padding:10px 20px;border:none;border-radius:var(--radius-xs);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;transition:.15s}
+.admin-tab-desktop.active{background:var(--brand);color:#fff}
+.admin-tab-desktop:hover:not(.active){color:var(--text)}
+.admin-table-wrap{background:var(--bg-elevated);border-radius:var(--radius);overflow:hidden}
+.admin-table-wrap table{width:100%;border-collapse:collapse;font-size:14px}
+.admin-table-wrap th{padding:14px 16px;text-align:left;color:var(--text-tertiary);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(255,255,255,.06)}
+.admin-table-wrap td{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text-secondary)}
+.admin-table-wrap tr:last-child td{border-bottom:none}
+.admin-tag{display:inline-flex;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600}
+.admin-tag.admin{background:rgba(139,92,246,.2);color:var(--brand-light)}
+.admin-tag.user{background:rgba(96,165,250,.2);color:var(--accent)}
+.admin-action{padding:6px 14px;border-radius:var(--radius-xs);border:none;cursor:pointer;font-size:12px;font-weight:600;transition:.15s}
+.admin-action.primary{background:var(--brand);color:#fff}
+.admin-action.primary:hover{background:var(--brand-light)}
+.admin-action.danger{background:rgba(244,114,182,.15);color:var(--accent-pink)}
+.admin-action.danger:hover{background:rgba(244,114,182,.25)}
+
+/* ===== PROFILE PAGE ===== */
+.profile-layout{display:flex;gap:32px;align-items:flex-start}
+.profile-sidebar{width:280px;flex-shrink:0}
+.profile-card{text-align:center;background:var(--bg-elevated);border-radius:var(--radius);padding:28px 20px;border:1px solid rgba(255,255,255,.05)}
+.profile-avatar{width:80px;height:80px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:var(--bg-card)}
+.profile-name{font-size:18px;font-weight:500;color:var(--text-secondary);margin-bottom:4px}
+.profile-sub{font-size:13px;color:var(--text-tertiary);margin-bottom:16px}
+.profile-login-btn{width:100%;padding:10px;border-radius:var(--radius-xs);border:1px solid rgba(139,92,246,.3);background:rgba(139,92,246,.1);color:var(--brand-light);font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+.profile-login-btn:hover{background:rgba(139,92,246,.2)}
+.profile-links{background:var(--bg-elevated);border-radius:var(--radius);padding:16px;margin-top:12px;border:1px solid rgba(255,255,255,.05)}
+.profile-link-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-xs);cursor:pointer;transition:.15s;font-size:14px;color:var(--text-secondary)}
+.profile-link-item:hover{background:var(--bg-card);color:var(--text)}
+.profile-link-item svg:last-child{margin-left:auto;opacity:.4}
+.profile-logout-btn{display:flex;align-items:center;gap:8px;width:100%;padding:12px;margin-top:8px;border-radius:var(--radius-xs);border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.08);color:#ef4444;font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+.profile-logout-btn:hover{background:rgba(239,68,68,.15)}
+.profile-content{flex:1;min-width:0}
+.profile-section-title{font-size:20px;font-weight:700;margin-bottom:12px}
+.profile-empty{background:var(--bg-elevated);border-radius:var(--radius);padding:40px;text-align:center;border:1px solid rgba(255,255,255,.05)}
+
+/* ===== AUTH MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-card{background:var(--bg-elevated);border-radius:var(--radius);padding:36px;width:400px;border:1px solid rgba(255,255,255,.06)}
+.modal-card h2{text-align:center;font-size:24px;font-weight:700;margin-bottom:4px}
+.modal-card .modal-sub{text-align:center;font-size:15px;color:var(--text-secondary);margin-bottom:28px}
+.modal-field{margin-bottom:16px}
+.modal-field label{display:block;font-size:14px;color:var(--text-secondary);margin-bottom:5px}
+.modal-field input{width:100%;padding:12px 16px;border-radius:var(--radius-xs);border:1px solid rgba(255,255,255,.1);background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;outline:none;transition:.15s}
+.modal-field input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-glow)}
+.modal-btn{width:100%;padding:13px;border-radius:var(--radius-xs);border:none;background:linear-gradient(135deg,var(--brand),#6d28d9);color:#fff;font-family:var(--font-body);font-weight:600;font-size:15px;cursor:pointer;transition:.3s}
+.modal-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--brand-glow)}
+.modal-switch{text-align:center;margin-top:18px;font-size:14px;color:var(--text-secondary)}
+.modal-switch button{background:none;border:none;color:var(--brand-light);cursor:pointer;font-family:var(--font-body);font-size:14px;font-weight:600;transition:.15s}
+.modal-switch button:hover{color:var(--accent)}
+
+/* ===== UTILITY ===== */
+.page-desktop{display:none}
+.page-desktop.active{display:block}
+.hidden{display:none!important}
+.fade-in{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== MOBILE HEADER (visible when sidebar hidden) ===== */
+.mobile-header{display:none}
+/* ===== MOBILE BOTTOM NAV (visible when sidebar hidden) ===== */
+.mobile-bottom-nav{display:none}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1024px){
+  .sidebar{width:72px}
+  .sidebar-logo span{display:none}
+  .nav-item span{display:none}
+  .nav-item{justify-content:center;padding:10px}
+  .nav-item .badge{right:4px;top:4px}
+  .nav-section-label{display:none}
+  .sidebar-user-info{display:none}
+  .sidebar-user{padding:8px;justify-content:center}
+  .sidebar-user-avatar{margin:0}
+  .main-scroll{padding:20px}
+  .app-grid-desktop{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+}
+
+.lightbox-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);opacity:0;transition:opacity .3s}
+.lightbox-overlay.show{display:flex;opacity:1}
+.lightbox-overlay img{max-width:70vw;max-height:80vh;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);object-fit:contain;animation:lb-scale .3s ease}
+@keyframes lb-scale{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.lightbox-close{position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;z-index:1}
+.lightbox-close:hover{background:rgba(255,255,255,.25);transform:scale(1.1)}
+.lightbox-prev,.lightbox-next{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.lightbox-prev:hover,.lightbox-next:hover{background:rgba(255,255,255,.2);transform:translateY(-50%) scale(1.1)}
+.lightbox-prev{left:16px}
+.lightbox-next{right:16px}
+.lightbox-counter{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.6);font-size:13px;font-family:var(--font-body);letter-spacing:.05em}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .app-layout{height:100%}
+  .main-header{display:none}
+  .mobile-header{display:flex;align-items:center;height:56px;padding:0 20px;background:var(--bg-secondary);border-bottom:1px solid rgba(255,255,255,.05);gap:10px;flex-shrink:0}
+  .mobile-header-logo{display:flex;align-items:center;gap:8px}
+  .mobile-header-logo svg{width:28px;height:28px;flex-shrink:0}
+  .mobile-header-logo span{font-family:var(--font-eng);font-size:18px;font-weight:800;background:linear-gradient(135deg,var(--brand),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .mobile-header-login{font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--brand-light);background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);padding:6px 14px;border-radius:20px;cursor:pointer;transition:.2s;margin-left:auto}
+  .mobile-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:60px;background:rgba(16,13,36,.95);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.06);z-index:100;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom,0)}
+  .mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border:none;background:none;color:var(--text-tertiary);cursor:pointer;transition:.15s;font-family:var(--font-body);font-size:10px;font-weight:500}
+  .mobile-nav-item.active{color:var(--brand-light)}
+  .mobile-nav-item svg{width:20px;height:20px}
+  .app-layout{padding-bottom:60px}
+  .today-hero{min-height:unset;margin-bottom:20px}
+  .today-hero-content{padding:24px 20px;gap:16px}
+  .today-hero-text h2{font-size:20px;color:#ffffff!important}
+  .today-hero-text p{font-size:13px;margin-bottom:12px;color:rgba(255,255,255,.85)!important}
+  .today-hero-art{display:none}
+  .today-badge{font-size:10px;padding:4px 10px;margin-bottom:8px}
+  .today-cta{padding:9px 20px;font-size:14px}
+  .main-scroll{padding:24px 24px 80px}
+  .app-grid-desktop{grid-template-columns:1fr 1fr;gap:12px}
+  .section-title{font-size:18px}
+  .section{margin-bottom:20px}
+  .category-row-desktop{overflow-x:auto;flex-wrap:nowrap;gap:6px;margin-bottom:16px;scrollbar-width:none;-ms-overflow-style:none;padding:0 4px}
+  .category-chip-desktop{font-size:13px;padding:8px 16px;border-radius:18px}
+  .grid-card-desktop{padding:12px}
+  .app-card-desktop{width:148px;padding:12px}
+  .section-header{margin-bottom:10px}
+  .profile-layout{flex-direction:column}
+  .profile-sidebar{width:100%}
+  .profile-content{width:100%}
+  .profile-empty{padding:28px 16px}
+
+
+  .admin-header-desktop p{font-size:14px}
+
+
+  
+}/* /@media 768px */
+
+@media(max-width:768px){
+  .admin-table-wrap{background:none;overflow:visible;border-radius:0;width:100%}
+  .admin-table-wrap table, .admin-table-wrap thead, .admin-table-wrap tbody, .admin-table-wrap th, .admin-table-wrap td, .admin-table-wrap tr{display:block}
+  .admin-table-wrap thead{display:none}
+  .admin-table-wrap tr{background:var(--bg-elevated,rgba(255,255,255,.04));border-radius:16px;padding:18px 20px;margin-bottom:14px;border:1px solid rgba(255,255,255,.06)}
+  .admin-table-wrap td{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px}
+  .admin-table-wrap td:last-child{border-bottom:none}
+  .admin-table-wrap td::before{content:attr(data-label);font-size:12px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.3px;margin-right:12px;flex-shrink:0}
+  .admin-table-wrap td:last-child::before{content:'';display:none}
+  .admin-table-wrap td .admin-action{width:100%;margin-top:4px}
+  [data-theme="light"] .admin-table-wrap tr{border-color:rgba(0,0,0,.08);background:rgba(0,0,0,.02)}
+}
+</style>
+</head>
+<body>
+<div class="app-layout">
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="url(#m2i-grad)"/>
+      <path d="M8 9l3.5 14 4.5-9 4.5 9 3.5-14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <defs><linearGradient id="m2i-grad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#8b5cf6"/><stop offset="1" stop-color="#60a5fa"/></linearGradient></defs>
+    </svg>
+    <span>M2I</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">เมนูหลัก</div>
+    <button class="nav-item active" data-page="today" onclick="switchPage('today')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>วันนี้</span>
+    </button>
+    <button class="nav-item" data-page="myapps" onclick="switchPage('myapps')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M12 6v6l3 2"/></svg>
+      <span>แอปของฉัน</span>
+    </button>
+    <button class="nav-item" data-page="search" onclick="switchPage('search')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>ค้นหา</span>
+    </button>
+    <button class="nav-item" data-page="profile" onclick="switchPage('profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>โปรไฟล์</span>
+    </button>
+    <div class="nav-section-label">จัดการ</div>
+    <button class="nav-item" data-page="admin" onclick="switchPage('admin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>จัดการระบบ</span>
+      <span class="badge">3</span>
+    </button>
+    <button class="nav-item" onclick="showAuthModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      <span>เข้าสู่ระบบ</span>
+    </button>
+  </nav>
+  <div class="sidebar-bottom">
+    <button onclick="showAuthModal()" style="width:100%;padding:10px 14px;border-radius:var(--radius-xs);border:1px solid rgba(139,92,246,.3);background:rgba(139,92,246,.1);color:var(--brand-light);font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      เข้าสู่ระบบ
+    </button>
+    <button onclick="toggleTheme()" id="theme-btn" title="เปลี่ยนธีม" style="width:100%;margin-top:6px;padding:8px 14px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg-card);color:var(--text-secondary);font-family:var(--font-body);font-size:12px;font-weight:500;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px">
+      <svg id="theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span id="theme-label">เปลี่ยนธีม</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main-area">
+
+  <!-- HEADER -->
+  <header class="main-header">
+    <div class="search-desktop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="ค้นหาแอป เกม หรือหมวดหมู่...">
+    </div>
+    <div class="header-actions">
+      <button class="header-action-btn" onclick="showAuthModal()" title="เข้าสู่ระบบ" style="width:auto;padding:0 14px;border-radius:20px;font-size:13px;font-weight:600;font-family:var(--font-body);color:var(--brand-light);background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25)">เข้าสู่ระบบ</button>
+      <button class="header-action-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+
+    </div>
+  </header>
+
+  <!-- MOBILE HEADER -->
+  <div class="mobile-header">
+    <div class="mobile-header-logo">
+      <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="url(#m2i-grad)"/><path d="M8 9l3.5 14 4.5-9 4.5 9 3.5-14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <span>M2I</span>
+    </div>
+    <button class="mobile-header-login" onclick="showAuthModal()">เข้าสู่ระบบ</button>
+  </div>
+
+  <!-- SCROLL CONTENT -->
+  <div class="main-scroll">
+
+    <!-- PAGE: MY APPS -->
+    <div class="page-desktop" id="page-myapps">
+      <h1 style="font-size:28px;font-weight:700;margin-bottom:24px">📱 แอปของฉัน</h1>
+      <div class="app-grid-desktop fade-in" id="myAppsGrid"></div>
+      <div id="myAppsEmpty" style="display:none;text-align:center;padding:80px 20px;color:var(--text-tertiary)">
+        <div style="font-size:64px;margin-bottom:16px;opacity:.4">📦</div>
+        <p style="font-size:18px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">ยังไม่มีแอปที่ติดตั้ง</p>
+        <p style="font-size:14px">ไปเลือกแอปที่คุณสนใจจากหน้าร้านค้า</p>
+        <button class="today-cta" style="margin-top:20px" onclick="switchPage('today')">ไปหน้าร้านค้า</button>
+      </div>
+    </div>
+
+    <!-- PAGE: APP VIEW -->
+    <div class="page-desktop" id="page-appview">
+      <div id="appViewHeader" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;transition:all .3s">
+        <button class="detail-back-desktop" style="padding:0;margin:0" onclick="closeAppView()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg> ย้อนกลับ</button>
+        <h1 id="appViewTitle" style="font-size:22px;font-weight:700;margin:0;flex:1">แอป</h1>
+        <button id="appFullscreenBtn" class="detail-back-desktop" style="padding:6px 10px;margin:0" onclick="toggleAppFullscreen()" title="เต็มจอ">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+      </div>
+      <iframe id="appViewFrame" src="" style="width:100%;height:calc(100vh - 140px);border:none;border-radius:12px;background:var(--bg-elevated);transition:all .3s" allow="camera;microphone;fullscreen"></iframe>
+      <div id="appFullscreenBar" style="display:none;position:fixed;top:-60px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);border-radius:0 0 16px 16px;padding:8px 20px 10px;gap:16px;align-items:center;transition:top .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.5)">
+        <button onclick="closeAppView()" style="background:rgba(255,255,255,.15);border:none;color:#fff;cursor:pointer;font-size:13px;padding:6px 14px;border-radius:14px;font-weight:600;white-space:nowrap">← Back</button>
+        <span id="appFullscreenTitle" style="color:#fff;font-size:13px;font-weight:600;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.5)"></span>
+        <button onclick="toggleAppFullscreen()" style="background:rgba(255,255,255,.2);border:none;color:#fff;cursor:pointer;font-size:13px;padding:6px 14px;border-radius:14px;font-weight:600;white-space:nowrap">ย่อ</button>
+      </div>
+      <div id="appFullscreenHandle" style="display:none;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:10000;cursor:pointer;transition:opacity .3s" onclick="pullDownFullscreenBar()">
+        <div id="fsHandleTab" style="width:40px;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:8px solid rgba(255,255,255,.7);border-radius:0 0 2px 2px;margin:0 auto;transition:border-color .3s, border-width .3s"></div>
+        <div id="fsHandleArrow" style="text-align:center;font-size:10px;color:rgba(255,255,255,.5);line-height:1;margin-top:2px;transition:transform .3s">▼</div>
+      </div>
+    </div>
+
+    <!-- PAGE: TODAY -->
+    <div class="page-desktop active" id="page-today">
+
+      <div class="today-hero fade-in" onclick="launchApp('etsy-pod')">
+        <div class="today-hero-bg"><div class="orb"></div><div class="orb2"></div></div>
+        <div class="today-hero-content">
+          <div class="today-hero-text">
+            <div class="today-badge">🔥 HOT</div>
+            <h2>Etsy POD<br>Wizard</h2>
+            <p>สร้างสินค้า Print-on-Demand ขายบน Etsy — เลือกสินค้า, AI สร้าง Artwork, ทำ Mockup, ตั้งราคา, จัดการ Listing ครบในที่เดียว</p>
+            <button class="today-cta" onclick="event.stopPropagation();launchApp('etsy-pod')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              เปิดเลย
+            </button>
+          </div>
+          <div class="today-hero-art"><div class="icon-circle" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div></div>
+        </div>
+      </div>
+
+      <div class="category-row-desktop">
+        <div class="category-chip-desktop active" onclick="filterByCat('all')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>ทั้งหมด</div>
+        <div class="category-chip-desktop" onclick="filterByCat('ธุรกิจ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>ธุรกิจ</div>
+        <div class="category-chip-desktop" onclick="filterByCat('ครีเอเตอร์')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>ครีเอเตอร์</div>
+        <div class="category-chip-desktop" onclick="filterByCat('Etsy')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Etsy</div>
+        <div class="category-chip-desktop" onclick="filterByCat('AI')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10H12V2z"/></svg>AI</div>
+      </div>
+
+      <div id="pwa-banner" style="background:var(--card-bg,rgba(255,255,255,.05));border:1px solid var(--brand);border-radius:14px;padding:14px 18px;margin-bottom:20px;display:none;align-items:center;gap:10px;cursor:pointer" onclick="installPWA()">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">📲</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">ติดตั้ง M2I App Store</div>
+          <div style="font-size:12px;color:var(--text-secondary)">เพิ่มแอปที่หน้าจอหลัก เปิดได้เหมือนแอปจริง</div>
+        </div>
+        <span style="font-size:18px;color:var(--text-secondary)">›</span>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><h2 class="section-title">🔥 มาแรงวันนี้</h2><button class="section-link" onclick="switchPage('search')">ดูทั้งหมด</button></div>
+        <div class="h-scroll" id="trendingApps"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><h2 class="section-title">✨ แอปทั้งหมด</h2><button class="section-link" onclick="switchPage('search')">ดูทั้งหมด</button></div>
+        <div class="app-grid-desktop" id="allAppsGrid"></div>
+      </div>
+    </div>
+
+    <!-- PAGE: DETAIL -->
+    <div class="page-desktop" id="page-detail">
+      <button class="detail-back-desktop" onclick="switchPage('today')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg> ย้อนกลับ</button>
+      <div class="detail-header fade-in">
+        <div class="detail-icon" style="background:linear-gradient(135deg,#6d28d9,#a855f7)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+        <div class="detail-header-info">
+          <h1>AI Voice Assistant Pro</h1>
+          <div class="detail-dev">M2I Labs • ความบันเทิง</div>
+          <div class="detail-stats">
+            <div class="detail-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>4.8</div>
+            <div class="detail-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>2.4k</div>
+            <div class="detail-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>AI</div>
+          </div>
+          <button class="detail-download" onclick="switchPage('checkout')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/><path d="M12 3v12"/><path d="M5 17h14"/></svg> ฿199 • ดาวน์โหลด</button>
+        </div>
+      </div>
+      <h3 style="margin-bottom:12px">ภาพตัวอย่าง</h3>
+            <div class="detail-screenshots">
+        <img class="detail-screenshots-img" src="/images/ss-home.png" alt="หน้าจอหลัก" onclick="openLightbox(0)" onerror="this.outerHTML='<div style=\'width:220px;height:150px;border-radius:12px;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-tertiary);border:1px solid rgba(255,255,255,.06);flex-shrink:0\'>🎙️ หน้าจอหลัก</div>'">
+        <img class="detail-screenshots-img" src="/images/ss-translate.png" alt="แปลภาษา" onclick="openLightbox(1)" onerror="this.outerHTML='<div style=\'width:220px;height:150px;border-radius:12px;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-tertiary);border:1px solid rgba(255,255,255,.06);flex-shrink:0\'>🌍 แปลภาษา</div>'">
+        <img class="detail-screenshots-img" src="/images/ss-summary.png" alt="สรุปเนื้อหา" onclick="openLightbox(2)" onerror="this.outerHTML='<div style=\'width:220px;height:150px;border-radius:12px;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-tertiary);border:1px solid rgba(255,255,255,.06);flex-shrink:0\'>📝 สรุปเนื้อหา</div>'">
+        <img class="detail-screenshots-img" src="/images/ss-settings.png" alt="ตั้งค่า" onclick="openLightbox(3)" onerror="this.outerHTML='<div style=\'width:220px;height:150px;border-radius:12px;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-tertiary);border:1px solid rgba(255,255,255,.06);flex-shrink:0\'>⚙️ ตั้งค่า</div>'">
+      </div>
+      <h3 style="margin-bottom:8px">เกี่ยวกับแอปนี้</h3>
+      <div class="detail-description">
+        <p>AI Voice Assistant Pro คือผู้ช่วยเสียงอัจฉริยะที่ขับเคลื่อนด้วย AI รุ่นล่าสุด รองรับการสนทนาภาษาไทย สามารถแปลภาษา ถามตอบ สรุปเนื้อหา และสร้างข้อความได้ด้วยเสียง</p>
+        <br>
+        <p><strong>ฟีเจอร์หลัก:</strong></p>
+        <p>• แปลภาษาสดระหว่างไทย-อังกฤษ-จีน-ญี่ปุ่น-เกาหลี<br>• สรุปเนื้อหาจากเสียงหรือข้อความยาวๆ<br>• สร้างอีเมล โพสต์โซเชียล เนื้อหาบทความ<br>• ถามตอบความรู้ทั่วไปด้วย AI<br>• รองรับการสั่งงานด้วยเสียงภาษาไทย</p>
+      </div>
+    </div>
+
+    <!-- PAGE: CHECKOUT -->
+    <div class="page-desktop" id="page-checkout">
+      <button class="detail-back-desktop" onclick="switchPage(&apos;detail&apos;)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg> ย้อนกลับ</button>
+      <div class="checkout-layout-desktop fade-in">
+        <h1>ชำระเงิน</h1>
+        <div class="security-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>ชำระเงินปลอดภัยด้วย M2I Pay</div>
+        <div class="checkout-card">
+          <div class="app-row">
+            <div class="icon" style="background:linear-gradient(135deg,#6d28d9,#a855f7)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+            <div class="info"><div class="name">AI Voice Assistant Pro</div><div class="dev">M2I Labs • รุ่น Pro (ถาวร)</div></div>
+          </div>
+        </div>
+        <div class="invoice-card">
+          <div class="inv-title">ใบแจ้งยอด</div>
+          <div class="invoice-row"><span>ราคาแอป</span><span>฿199.00</span></div>
+          <div class="invoice-row"><span>ภาษี (7%)</span><span>฿13.93</span></div>
+          <div class="invoice-row total"><span>ยอดรวม</span><span>฿212.93</span></div>
+        </div>
+        <button class="pay-btn-desktop" onclick="alert('เชื่อมต่อ M2I Pay... (Sandbox)')">💳 ชำระเงินด้วย Alipay</button>
+        <div class="sandbox-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Sandbox Mode — ไม่มีการเรียกเก็บจริง</div>
+      </div>
+    </div>
+
+    <!-- PAGE: SEARCH -->
+    <div class="page-desktop" id="page-search">
+      <h2 style="font-size:28px;font-weight:700;margin-bottom:16px">ค้นหาแอป</h2>
+      <div class="search-page-input" style="position:relative;margin-bottom:20px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-tertiary);width:18px;height:18px"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="searchInput" placeholder="ค้นหาชื่อแอป..." oninput="window.doSearch()" style="width:100%;height:44px;padding:0 16px 0 44px;border-radius:22px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;outline:none;transition:.2s;box-sizing:border-box" onfocus="this.style.borderColor='var(--brand)';this.style.boxShadow='0 0 0 3px var(--brand-glow)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+      </div>
+      <div class="app-grid-desktop fade-in" id="searchResults"></div>
+    </div><!-- PAGE: PROFILE -->
+    <div class="page-desktop" id="page-profile">
+      <div class="profile-layout fade-in">
+        <div class="profile-sidebar">
+          <div class="profile-card">
+            <div class="profile-avatar"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <h2 class="profile-name">ยังไม่ได้เข้าสู่ระบบ</h2>
+            <p class="profile-sub">เข้าสู่ระบบเพื่อจัดการแอปและการซื้อ</p>
+            <button class="profile-login-btn" onclick="showAuthModal()">เข้าสู่ระบบ / สมัครสมาชิก</button>
+          </div>
+          <div class="profile-links">
+            <div class="profile-link-item" onclick="switchPage('admin')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>จัดการระบบ</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+            <div class="profile-link-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>ประวัติการซื้อ</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <button class="profile-logout-btn" onclick="logoutUser()" id="profile-logout-btn" style="display:none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            ออกจากระบบ
+          </button>
+        </div>
+        <div class="profile-content">
+          <h2 class="profile-section-title">แอปของฉัน</h2>
+          <div class="profile-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.25;margin-bottom:12px" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <p style="font-size:15px;color:var(--text-tertiary)">ยังไม่มีแอปที่ดาวน์โหลด</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: ADMIN -->
+    <div class="page-desktop" id="page-admin">
+      <button class="detail-back-desktop" onclick="switchPage('profile')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg> ย้อนกลับ</button>
+      <div class="admin-header-desktop">
+        <h1>จัดการระบบ</h1>
+        <p>M2I App Store Admin Panel — จัดการผู้ใช้ แอปพลิเคชัน และคำสั่งซื้อ</p>
+      </div>
+      <div class="admin-tabs-desktop">
+        <button class="admin-tab-desktop active" onclick="switchAdmin('users')">ผู้ใช้</button>
+        <button class="admin-tab-desktop" onclick="switchAdmin('apps')">แอปพลิเคชัน</button>
+        <button class="admin-tab-desktop" onclick="switchAdmin('orders')">คำสั่งซื้อ</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:14px;color:var(--text-secondary)">ทั้งหมด 12 คน</span>
+        <button class="admin-action primary" onclick="adminAddUser()">+ เพิ่มผู้ใช้</button>
+      </div>
+      <div class="admin-table-wrap" id="admin-users">
+        <table>
+          <thead><tr><th>ชื่อ</th><th>อีเมล</th><th>บทบาท</th><th>สถานะ</th><th></th></tr></thead>
+          <tbody>
+            <tr><td data-label="ชื่อ">Pete</td><td data-label="อีเมล">pete@example.com</td><td data-label="บทบาท"><span class="admin-tag admin">Admin</span></td><td data-label="สถานะ" style="color:var(--accent-green)">Active</td><td data-label=""><button class="admin-action danger" onclick="adminToggleUser(this,'Pete')">ระงับ</button></td></tr>
+            <tr><td data-label="ชื่อ">Somchai</td><td data-label="อีเมล">somchai@email.com</td><td data-label="บทบาท"><span class="admin-tag user">User</span></td><td data-label="สถานะ" style="color:var(--accent-green)">Active</td><td data-label=""><button class="admin-action danger" onclick="adminToggleUser(this,'Somchai')">ระงับ</button></td></tr>
+            <tr><td data-label="ชื่อ">Siriporn</td><td data-label="อีเมล">siriporn@email.com</td><td data-label="บทบาท"><span class="admin-tag user">User</span></td><td data-label="สถานะ" style="color:var(--accent-green)">Active</td><td data-label=""><button class="admin-action danger" onclick="adminToggleUser(this,'Siriporn')">ระงับ</button></td></tr>
+            <tr><td data-label="ชื่อ">Anuwat</td><td data-label="อีเมล">anuwat@email.com</td><td data-label="บทบาท"><span class="admin-tag user">User</span></td><td data-label="สถานะ" style="color:var(--text-tertiary)">Inactive</td><td data-label=""><button class="admin-action primary" onclick="adminToggleUser(this,'Anuwat')">เปิด</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-table-wrap hidden" id="admin-apps">
+        <table>
+          <thead><tr><th>ชื่อแอป</th><th>ผู้พัฒนา</th><th>ราคา</th><th>ยอดขาย</th><th></th></tr></thead>
+          <tbody>
+            <tr><td data-label="ชื่อแอป">AI Voice Pro</td><td data-label="ผู้พัฒนา">M2I Labs</td><td data-label="ราคา">฿199</td><td data-label="ยอดขาย">1,247</td><td data-label=""><button class="admin-action primary" onclick="adminEditApp('AI Voice Pro','M2I Labs','199')">แก้ไข</button></td></tr>
+            <tr><td data-label="ชื่อแอป">NoteFlow</td><td data-label="ผู้พัฒนา">DevThai</td><td data-label="ราคา">ฟรี</td><td data-label="ยอดขาย">3,892</td><td data-label=""><button class="admin-action primary" onclick="adminEditApp('NoteFlow','DevThai','0')">แก้ไข</button></td></tr>
+            <tr><td data-label="ชื่อแอป">PixelCraft</td><td data-label="ผู้พัฒนา">PhotoAI</td><td data-label="ราคา">฿99</td><td data-label="ยอดขาย">856</td><td data-label=""><button class="admin-action primary" onclick="adminEditApp('PixelCraft','PhotoAI','99')">แก้ไข</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-table-wrap hidden" id="admin-orders">
+        <table>
+          <thead><tr><th>คำสั่งซื้อ</th><th>ผู้ใช้</th><th>แอป</th><th>ยอด</th><th>สถานะ</th></tr></thead>
+          <tbody>
+            <tr><td data-label="คำสั่งซื้อ">#M2I-001</td><td data-label="ผู้ใช้">somchai@email.com</td><td data-label="แอป">AI Voice Pro</td><td data-label="ยอด">฿212.93</td><td data-label="สถานะ" style="color:var(--accent-green)">สำเร็จ</td></tr>
+            <tr><td>#M2I-002</td><td>siriporn@email.com</td><td>PixelCraft</td><td>฿105.93</td><td style="color:var(--accent-green)">สำเร็จ</td></tr>
+            <tr><td>#M2I-003</td><td>pete@example.com</td><td>ChatMate</td><td>฿159.43</td><td style="color:var(--accent-orange)">รอดำเนินการ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /main-scroll -->
+</div><!-- /main-area -->
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay hidden" id="auth-modal">
+  <div class="modal-card">
+    <h2 id="auth-title">เข้าสู่ระบบ</h2>
+    <div class="modal-sub" id="auth-sub">เข้าสู่ระบบ M2I App Store</div>
+
+    <!-- OAuth buttons -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <button onclick="loginWithGoogle()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border-radius:var(--radius-xs);border:1px solid rgba(0,0,0,.15);background:#fff;color:#1f1f1f;font-family:var(--font-body);font-weight:600;font-size:14px;cursor:pointer;transition:.2s">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.15-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.85 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.82-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.67 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
+        เข้าสู่ระบบด้วย Google
+      </button>
+      <button onclick="loginWithLine()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border-radius:var(--radius-xs);border:none;background:#06C755;color:#fff;font-family:var(--font-body);font-weight:600;font-size:14px;cursor:pointer;transition:.2s">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.617v3.24c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.508.43-.595.06-.023.129-.034.197-.034.195 0 .375.105.495.255l2.462 3.65V8.108c0-.345.282-.63.628-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .63.285.63.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.5C24 4.708 18.627 0 12 0S0 4.708 0 10.5C0 16.291 5.373 21 12 21c1.09 0 2.145-.137 3.155-.39L18.75 23.1c.165.165.385.255.615.255.115 0 .225-.021.33-.06.345-.135.555-.45.555-.81v-3.69C22.098 17.064 24 14.085 24 10.5"/></svg>
+        เข้าสู่ระบบด้วย LINE
+      </button>
+    </div>
+
+    <!-- Divider -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+      <span style="font-size:12px;color:var(--text-tertiary)">หรือ</span>
+      <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+    </div>
+
+    <!-- Local auth fields -->
+    <div id="auth-fields">
+      <div class="modal-field"><label>อีเมล</label><input type="email" id="auth-email" placeholder="กรอกอีเมล"></div>
+      <div class="modal-field"><label>รหัสผ่าน</label><input type="password" id="auth-password" placeholder="กรอกรหัสผ่าน"></div>
+    </div>
+    <button class="modal-btn" id="auth-btn" onclick="handleAuth()">เข้าสู่ระบบ</button>
+    <div class="modal-switch">
+      <span id="auth-switch-text">ยังไม่ได้เป็นสมาชิก?</span>
+      <button id="auth-switch-btn" onclick="toggleAuth()">สมัครสมาชิก</button>
+    </div>
+  </div>
+</div>
+
+  </div>
+</div>
+
+<!-- ADMIN EDIT MODAL -->
+<div class="modal-overlay hidden" id="admin-edit-modal">
+  <div class="modal-card">
+    <h2 id="admin-edit-title">แก้ไขแอป</h2>
+    <div class="modal-sub">แก้ไขข้อมูลแอปพลิเคชัน</div>
+    <div id="admin-edit-fields">
+      <div class="modal-field"><label>ชื่อแอป</label><input type="text" id="admin-edit-name" placeholder="ชื่อแอป"></div>
+      <div class="modal-field"><label>ผู้พัฒนา</label><input type="text" id="admin-edit-dev" placeholder="ผู้พัฒนา"></div>
+      <div class="modal-field"><label>ราคา (฿)</label><input type="number" id="admin-edit-price" placeholder="0"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="modal-btn" style="flex:1;background:var(--bg-card);color:var(--text-secondary)" onclick="closeAdminEdit()">ยกเลิก</button>
+      <button class="modal-btn" style="flex:1" onclick="saveAdminEdit()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-bottom-nav">
+  <button class="mobile-nav-item active" data-mpage="today" onclick="switchPage('today')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>วันนี้</span>
+  </button>
+  <button class="mobile-nav-item" data-mpage="search" onclick="switchPage('search')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <span>ค้นหา</span>
+  </button>
+  <button class="mobile-nav-item" data-mpage="profile" onclick="switchPage('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>โปรไฟล์</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showAuthModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    <span>เข้าสู่ระบบ</span>
+  </button>
+</nav>
+
+<script>
+function applyProfileUser() {
+  var saved = localStorage.getItem('m2i_user');
+  if (!saved) return;
+  try {
+    var u = JSON.parse(saved);
+    var pn = document.querySelector('.profile-name');
+    if (pn && pn.textContent.includes('ยังไม่ได้')) { pn.textContent = u.name; pn.style.cssText = 'font-size:20px;font-weight:700;margin-bottom:4px'; }
+    var ps = document.querySelector('.profile-sub');
+    if (ps && (ps.textContent.includes('เข้าสู่ระบบ') || ps.textContent === '')) { ps.textContent = u.email || ''; ps.style.cssText = 'font-size:14px;color:var(--text-secondary);margin-bottom:16px'; }
+    var pa = document.querySelector('.profile-avatar');
+    if (pa) {
+      var avatarSrc = u.avatar_url ? u.avatar_url : 'https://ui-avatars.com/api/?name='+encodeURIComponent(u.name)+'&background=8b5cf6&color=fff&bold=true&size=128';
+      pa.innerHTML = '<img src="'+avatarSrc+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.onerror=null;this.src=\'https://ui-avatars.com/api/?name='+encodeURIComponent(u.name)+'&background=8b5cf6&color=fff&bold=true&size=128\'">';
+    }
+    var pb = document.querySelector('.profile-login-btn');
+    if (pb && pb.textContent.includes('เข้าสู่ระบบ')) { pb.textContent = 'จัดการบัญชี'; pb.onclick = function() { switchPage('admin'); }; }
+  } catch(e){}
+}
+
+function switchPage(page) {
+  document.querySelectorAll('.page-desktop').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'profile') applyProfileUser();
+  if (page === 'search') {
+    setTimeout(function(){
+      var inp = document.getElementById('searchInput');
+      if(inp) { inp.value=''; inp.focus(); if(window.showRecentSearches) window.showRecentSearches(); }
+    },100);
+  }
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
+  const navBtn = document.querySelector('.nav-item[data-page="' + page + '"]');
+  if (navBtn) navBtn.classList.add('active');
+  const mBtn = document.querySelector('.mobile-nav-item[data-mpage="' + page + '"]');
+  if (mBtn) mBtn.classList.add('active');
+}
+function switchAdmin(tab) {
+  document.querySelectorAll('.admin-tab-desktop').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#admin-users,#admin-apps,#admin-orders').forEach(t => t.classList.add('hidden'));
+  document.getElementById('admin-' + tab).classList.remove('hidden');
+  document.querySelector('.admin-tab-desktop[onclick*="' + tab + '"]').classList.add('active');
+}
+let authMode = 'login';
+function showAuthModal() {
+  document.getElementById('auth-modal').classList.remove('hidden');
+}
+function toggleAuth() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  if (authMode === 'login') {
+    document.getElementById('auth-title').textContent = 'เข้าสู่ระบบ';
+    document.getElementById('auth-sub').textContent = 'เข้าสู่ระบบ M2I App Store';
+    document.getElementById('auth-btn').textContent = 'เข้าสู่ระบบ';
+    document.getElementById('auth-switch-text').textContent = 'ยังไม่ได้เป็นสมาชิก?';
+    document.getElementById('auth-switch-btn').textContent = 'สมัครสมาชิก';
+  } else {
+    document.getElementById('auth-title').textContent = 'สมัครสมาชิก';
+    document.getElementById('auth-sub').textContent = 'สร้างบัญชี M2I App Store';
+    document.getElementById('auth-btn').textContent = 'สมัครสมาชิก';
+    document.getElementById('auth-switch-text').textContent = 'มีบัญชีอยู่แล้ว?';
+    document.getElementById('auth-switch-btn').textContent = 'เข้าสู่ระบบ';
+  }
+}
+function handleAuth() {
+  const email = document.getElementById('auth-email').value;
+  const password = document.getElementById('auth-password').value;
+  if (!email || !password) { alert('กรุณากรอกอีเมลและรหัสผ่าน'); return; }
+  const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+  fetch(endpoint, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email, password, name: email.split('@')[0]})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      localStorage.setItem('m2i_token', data.token);
+      localStorage.setItem('m2i_user', JSON.stringify(data.user));
+      alert(authMode === 'login' ? 'เข้าสู่ระบบสำเร็จ' : 'สมัครสมาชิกสำเร็จ');
+      document.getElementById('auth-modal').classList.add('hidden');
+      location.reload();
+    } else {
+      alert(data.error || 'เกิดข้อผิดพลาด');
+    }
+  })
+  .catch(e => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
+}
+function loginWithGoogle() {
+  window.location.href = '/api/auth/google/login';
+}
+function loginWithLine() {
+  window.location.href = '/api/auth/line/login';
+}
+// ===== ADMIN FUNCTIONS =====
+function adminAddUser() {
+  var email = prompt('อีเมลผู้ใช้ใหม่:');
+  if (email) alert('ระบบกำลังพัฒนา — จะเพิ่มผู้ใช้ ' + email + ' เมื่อเชื่อม API จริง');
+}
+function adminToggleUser(btn, name) {
+  if (btn.textContent === 'ระงับ') {
+    if (confirm('ระงับผู้ใช้ ' + name + '?')) {
+      btn.textContent = 'เปิด';
+      btn.className = 'admin-action primary';
+      btn.closest('tr').querySelector('td:nth-child(4)').style.color = 'var(--text-tertiary)';
+      btn.closest('tr').querySelector('td:nth-child(4)').textContent = 'Inactive';
+    }
+  } else {
+    if (confirm('เปิดใช้งาน ' + name + '?')) {
+      btn.textContent = 'ระงับ';
+      btn.className = 'admin-action danger';
+      btn.closest('tr').querySelector('td:nth-child(4)').style.color = 'var(--accent-green)';
+      btn.closest('tr').querySelector('td:nth-child(4)').textContent = 'Active';
+    }
+  }
+}
+function adminEditApp(name, dev, price) {
+  document.getElementById('admin-edit-name').value = name;
+  document.getElementById('admin-edit-dev').value = dev;
+  document.getElementById('admin-edit-price').value = price;
+  document.getElementById('admin-edit-modal').classList.remove('hidden');
+}
+function closeAdminEdit() {
+  document.getElementById('admin-edit-modal').classList.add('hidden');
+}
+function saveAdminEdit() {
+  var n = document.getElementById('admin-edit-name').value.trim();
+  var d = document.getElementById('admin-edit-dev').value.trim();
+  var p = document.getElementById('admin-edit-price').value.trim();
+  if (!n) { alert('กรุณากรอกชื่อแอป'); return; }
+  alert('บันทึก \'' + n + '\' เรียบร้อย (ระบบยังเป็น mock — รอเชื่อม API จริง)');
+  closeAdminEdit();
+}
+// Close modal on overlay click
+document.getElementById('admin-edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+
+// ===== AUTH STATE MANAGEMENT =====
+function updateAuthUI(user) {
+  // Show logout button
+  const logoutBtn = document.getElementById('profile-logout-btn');
+  if (logoutBtn) { logoutBtn.style.display = 'flex'; }
+  // Update sidebar bottom
+  const sidebarBottom = document.querySelector('.sidebar-bottom');
+  if (sidebarBottom) {
+    var avatarSrc2 = user.avatar_url ? user.avatar_url : 'https://ui-avatars.com/api/?name='+encodeURIComponent(user.name)+'&background=8b5cf6&color=fff&bold=true&size=64';
+    sidebarBottom.innerHTML = '<div class="sidebar-user"><div class="sidebar-user-avatar"><img src="'+avatarSrc2+'" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.onerror=null;this.src=\'https://ui-avatars.com/api/?name='+encodeURIComponent(user.name)+'&background=8b5cf6&color=fff&bold=true&size=64\'"></div><div class="sidebar-user-info"><div class="sidebar-user-name">'+user.name+'</div><div class="sidebar-user-role">'+(user.member_tier||'Member')+'</div></div></div>';
+  }
+  // Hide sidebar nav login item (profile already exists)
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(function(n) {
+    const span = n.querySelector('span');
+    if (span && span.textContent.includes('เข้าสู่ระบบ')) {
+      n.style.display = 'none';
+    }
+  });
+  // Hide login button in mobile bottom nav (profile button already exists)
+  const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+  mobileNavItems.forEach(function(n) {
+    const span = n.querySelector('span');
+    if (span && span.textContent.includes('เข้าสู่ระบบ')) {
+      n.style.display = 'none';
+    }
+  });
+  // Update mobile header login
+  const mobileHeaderLogin = document.querySelector('.mobile-header-login');
+  if (mobileHeaderLogin) {
+    mobileHeaderLogin.textContent = user.name;
+    mobileHeaderLogin.onclick = function() { switchPage('profile'); };
+  }
+  // Update header login button
+  const headerBtn = document.querySelector('.header-action-btn');
+  if (headerBtn) {
+    headerBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    headerBtn.onclick = function() { switchPage('profile'); };
+    headerBtn.style = 'width:36px;height:36px;border-radius:50%;border:2px solid var(--brand);padding:0;display:flex;align-items:center;justify-content:center;background:none;color:var(--text-secondary);cursor:pointer';
+  }
+  // Update profile page
+  const profileName = document.querySelector('.profile-name');
+  if (profileName) {
+    const avatar = document.querySelector('.profile-avatar');
+    if (avatar) {
+      avatar.innerHTML = '<img src="https://ui-avatars.com/api/?name='+encodeURIComponent(user.name)+'&background=8b5cf6&color=fff&bold=true&size=128" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
+    }
+    profileName.textContent = user.name;
+    profileName.style.cssText = 'font-size:20px;font-weight:700;margin-bottom:4px';
+    const sub = document.querySelector('.profile-sub');
+    if (sub) { sub.textContent = user.email || ''; sub.style.cssText = 'font-size:14px;color:var(--text-secondary);margin-bottom:16px'; }
+    const btn = document.querySelector('.profile-login-btn');
+    if (btn) { btn.textContent = 'จัดการบัญชี'; btn.onclick = function() { switchPage('admin'); }; }
+  }
+  // Update profile sidebar links for logged-in user
+  const emptyEl = document.querySelector('.profile-empty p');
+  if (emptyEl && emptyEl.textContent.includes('ยังไม่มีแอป')) {
+    emptyEl.textContent = 'คุณยังไม่มีแอปที่ดาวน์โหลด';
+  }
+}
+
+function logoutUser() {
+  localStorage.removeItem('m2i_token');
+  localStorage.removeItem('m2i_user');
+  // Reset profile UI to logged-out state
+  const nameEl = document.querySelector('.profile-name');
+  if (nameEl) { nameEl.textContent = 'ยังไม่ได้เข้าสู่ระบบ'; }
+  const subEl = document.querySelector('.profile-sub');
+  if (subEl) { subEl.textContent = 'เข้าสู่ระบบเพื่อจัดการแอปและการซื้อ'; subEl.style.cssText = 'font-size:13px;color:var(--text-tertiary);margin-bottom:16px'; }
+  const btn = document.querySelector('.profile-login-btn');
+  if (btn) { btn.textContent = 'เข้าสู่ระบบ / สมัครสมาชิก'; btn.onclick = function() { showAuthModal(); }; }
+  // Update header
+  var hdr = document.querySelector('.header-right .login-btn');
+  if (hdr) { hdr.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'; }
+  var mobHdr = document.querySelector('.mobile-header-login');
+  if (mobHdr) { mobHdr.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'; }
+  // Hide logout button
+  const logoutBtn = document.getElementById('profile-logout-btn');
+  if (logoutBtn) { logoutBtn.style.display = 'none'; }
+  // Restore sidebar to logged-out state
+  var sb = document.querySelector('.sidebar-bottom');
+  if (sb) { sb.innerHTML = '<div class="sidebar-login" onclick="showAuthModal()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> เข้าสู่ระบบ</div>'; }
+  // Show login nav item
+  document.querySelectorAll('.nav-item').forEach(function(n) {
+    var s = n.querySelector('span');
+    if (s && s.textContent.includes('เข้าสู่ระบบ')) { n.style.display = ''; }
+  });
+}
+
+function checkAuthOnLoad() {
+  const savedToken = localStorage.getItem('m2i_token');
+  if (savedToken) {
+    fetch('/api/auth/me', {headers: {'Authorization': 'Bearer ' + savedToken}})
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok && data.user) {
+          localStorage.setItem('m2i_user', JSON.stringify(data.user));
+          updateAuthUI(data.user);
+        } else {
+          localStorage.removeItem('m2i_token');
+          localStorage.removeItem('m2i_user');
+        }
+      })
+      .catch(function() { /* silently ignore */ });
+  }
+}
+
+// Check for token in URL (OAuth callback redirect)
+const urlParams = new URLSearchParams(window.location.search);
+const tokenParam = urlParams.get('token');
+if (tokenParam) {
+  localStorage.setItem('m2i_token', tokenParam);
+  fetch('/api/auth/me', {headers: {'Authorization': 'Bearer ' + tokenParam}})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok && data.user) {
+        localStorage.setItem('m2i_user', JSON.stringify(data.user));
+      }
+    })
+    .catch(function() {});
+  history.replaceState(null, '', window.location.pathname);
+  // Delay then check auth
+  setTimeout(function(){ checkAuthOnLoad(); setTimeout(applyProfileUser, 200); }, 500);
+} else {
+  // Check existing auth on every page load
+  checkAuthOnLoad();
+}
+
+document.getElementById('auth-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+
+// ===== THEME TOGGLE =====
+(function(){
+  var saved = localStorage.getItem('m2i_theme');
+  var prefersDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+  var isLight = saved === 'light' || (!saved && !prefersDark);
+  if (isLight) document.documentElement.setAttribute('data-theme','light');
+  updateThemeUI(isLight);
+})();
+
+function toggleTheme(){
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('m2i_theme','dark');
+  } else {
+    document.documentElement.setAttribute('data-theme','light');
+    localStorage.setItem('m2i_theme','light');
+  }
+  updateThemeUI(!isLight);
+}
+
+function updateThemeUI(isLight){
+  var icon = document.getElementById('theme-icon');
+  var label = document.getElementById('theme-label');
+  if (!icon || !label) return;
+  if (isLight) {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    label.textContent = 'Dark Mode';
+  } else {
+    icon.innerHTML = '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+    label.textContent = 'Light Mode';
+  }
+}
+</script>
+<script>
+window.APPS = [
+  {id:'etsy-pod',name:'Etsy POD Wizard',desc:'สร้างสินค้า Print-on-Demand บน Etsy',price:'฿299',icon:'#8b5cf6',category:'ธุรกิจ',installed:true,appUrl:'/apps/etsy-pod',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',screenshots:[],desc_full:'<p>Etsy POD Wizard ช่วยคุณสร้างและจัดการสินค้า Print-on-Demand บน Etsy แบบครบวงจร</p><br><p><strong>ฟีเจอร์:</strong><br>• เลือกสินค้าจาก Printful Catalog<br>• AI สร้าง Artwork อัตโนมัติ<br>• Mockup สินค้าบน model จริง<br>• ตั้งราคา + คำนวณกำไร<br>• จัดการ Listing บน Etsy</p>'},
+  {id:'tiktok-ugc',name:'TikTok UGC Studio',desc:'สร้างวิดีโอ TikTok อัตโนมัติ',price:'฿599',icon:'#f472b6',category:'ครีเอเตอร์',appUrl:'/apps/tiktok-ugc',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29.94 29.94 0 0 0 1 11.75c-.06 2.32.23 6.27 1.46 7.83a2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2c1.23-1.56 1.52-5.51 1.46-7.83a29.94 29.94 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>',screenshots:[],desc_full:'<p>สร้างคลิป TikTok UGC อัตโนมัติด้วย AI</p><br><p><strong>ฟีเจอร์:</strong><br>• AI เขียนสคริปต์ review สินค้า<br>• Text-to-Speech พากย์เสียงภาษาไทย<br>• Prodia AI สร้างวิดีโอ<br>• Pipeline อัตโนมัติตั้งแต่ต้นจนจบ</p>'},
+  {id:'super-appsheet',name:'SuperAppsheet POS',desc:'ระบบขายหน้าร้าน + จัดการสต๊อก',price:'฿199',icon:'#34d399',category:'ธุรกิจ',appUrl:'/apps/super-appsheet',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',screenshots:[],desc_full:'<p>ระบบ POS สำหรับร้านค้า จัดการสต๊อกและออเดอร์</p><br><p><strong>ฟีเจอร์:</strong><br>• สแกนบาร์โค้ด / ค้นหาสินค้า<br>• สร้างออเดอร์ + รับชำระเงิน<br>• จัดการสต๊อก<br>• รายงานขายรายวัน<br>• ระบบสมาชิก</p>'},
+];
+// My Apps (installed)
+window.MY_APPS = window.APPS.filter(function(a){ return a.installed; });
+window.saveRecentSearch = function(q){
+  var recents = JSON.parse(localStorage.getItem('m2i_recent_searches') || '[]');
+  q = q.trim();
+  if(!q) return;
+  recents = recents.filter(function(s){ return s !== q; });
+  recents.unshift(q);
+  if(recents.length > 10) recents = recents.slice(0,10);
+  localStorage.setItem('m2i_recent_searches', JSON.stringify(recents));
+};
+window.showRecentSearches = function(){
+  var c = document.getElementById('searchResults');
+  if(!c) return;
+  var inp = document.getElementById('searchInput');
+  if(inp && inp.value.trim()) { window.doSearch(); return; }
+  var recents = JSON.parse(localStorage.getItem('m2i_recent_searches') || '[]');
+  if(recents.length === 0) {
+    c.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-tertiary);font-size:14px"><div style="font-size:40px;margin-bottom:12px;opacity:.5">\uD83D\uDD0D</div>\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E0A\u0E37\u0E48\u0E2D\u0E41\u0E2D\u0E1B\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E04\u0E49\u0E19\u0E2B\u0E32</div>';
+    return;
+  }
+  var items = '';
+  for(var i=0;i<recents.length;i++){
+    var safe = recents[i].replace(/'/g, '\\u0027');
+    items += '<div class="recent-search-pill" onclick="document.getElementById(\'searchInput\').value=\''+safe+'\';window.doSearch()">'+recents[i]+'<span class="recent-search-pill-rm" onclick="event.stopPropagation();window.removeRecentSearch(\''+safe+'\')" title="\u0E25\u0E1A">\u2715</span></div>';
+  }
+  c.innerHTML = '<div style="margin-bottom:12px;font-size:12px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;font-weight:600">\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E25\u0E48\u0E32\u0E2A\u0E38\u0E14</div><div class="recent-search-pills">' + items + '</div>';
+};
+window.removeRecentSearch = function(q){
+  var recents = JSON.parse(localStorage.getItem('m2i_recent_searches') || '[]');
+  recents = recents.filter(function(s){ return s !== q; });
+  localStorage.setItem('m2i_recent_searches', JSON.stringify(recents));
+  window.showRecentSearches();
+};
+window.doSearch = function(){
+  var inp = document.getElementById('searchInput');
+  if(!inp) return;
+  var q = inp.value.toLowerCase().trim();
+  var c = document.getElementById('searchResults');
+  if(!c) return;
+  if(!q) { window.showRecentSearches(); return; }
+  window.saveRecentSearch(inp.value);
+  var filtered = window.APPS.filter(function(a){ return a.name.toLowerCase().indexOf(q) >= 0 || a.desc.toLowerCase().indexOf(q) >= 0; });
+  if (filtered.length === 0) {
+    c.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-tertiary);font-size:15px"><div style="font-size:48px;margin-bottom:12px">\uD83D\uDD0D</div>\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E41\u0E2D\u0E1B "<strong style="color:var(--text)">' + q + '</strong>"<br><span style="font-size:13px">\u0E25\u0E2D\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E14\u0E49\u0E27\u0E22\u0E04\u0E33\u0E2D\u0E37\u0E48\u0E19\u0E14\u0E39</span></div>';
+    return;
+  }
+  var items = '';
+  for(var i=0;i<filtered.length;i++){
+    var a = filtered[i];
+    var isFree = a.free || a.price === '\u0E1F\u0E23\u0E35';
+    items += '<div class="grid-card-desktop" onclick="switchPage(\'detail\')">' +
+      '<div class="card-icon" style="background:linear-gradient(135deg,'+a.icon+','+a.icon.replace('#','#')+')">' + a.svg + '</div>' +
+      '<div class="card-name">'+a.name+'</div>' +
+      '<div class="card-desc">'+a.desc+'</div>' +
+      '<div class="card-bottom"><span class="card-price'+(isFree?' free':'')+'">'+a.price+'</span></div>' +
+      '</div>';
+  }
+  c.innerHTML = items;
+};
+</script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var chips = document.querySelectorAll('.category-chip-desktop');
+  for(var i=0;i<chips.length;i++){
+    (function(chip){
+      chip.addEventListener('click',function(e){
+        // Remove active from all
+        for(var j=0;j<chips.length;j++) chips[j].classList.remove('active');
+        // Add active to clicked
+        chip.classList.add('active');
+        // Scroll to center
+        var row = chip.parentElement;
+        var offset = chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2;
+        row.scrollTo({left:offset,behavior:'smooth'});
+        // Filter apps by category
+        filterByCategory(chip.textContent.trim());
+      });
+    })(chips[i]);
+  }
+});
+function filterByCategory(cat){
+  var filtered = cat === 'ทั้งหมด' ? window.APPS : window.APPS.filter(function(a){ return a.category === cat; });
+  renderAppCards(filtered);
+}
+window.filterByCat = filterByCategory;
+
+// ===== M2I GEN: App Launcher & Subscription =====
+function makeAppCard(a, showAction) {
+  var isFree = a.free || a.price === 'ฟรี';
+  var card = '<div class="app-card-desktop" data-aid="'+a.id+'" onclick="launchApp(this.dataset.aid)">' +
+    '<div class="card-icon" style="background:linear-gradient(135deg,'+a.icon+','+a.icon.replace('#','#')+')">' + a.svg + '</div>' +
+    '<div class="card-name">'+a.name+'</div><div class="card-desc">'+a.desc+'</div>' +
+    '<div class="card-bottom"><span class="card-price'+(isFree?' free':'')+'">'+a.price+'/ด</span>';
+  if (a.installed) { card += '<span style="font-size:10px;color:var(--accent-green);font-weight:600">ติดตั้งแล้ว</span>'; }
+  else if (showAction) { card += '<button class="card-action" data-aid="'+a.id+'" onclick="event.stopPropagation();subscribeApp(this.dataset.aid)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>'; }
+  card += '</div></div>'; return card;
+}
+function makeGridCard(a) {
+  var isFree = a.free || a.price === 'ฟรี';
+  return '<div class="grid-card-desktop" data-aid="'+a.id+'" onclick="launchApp(this.dataset.aid)">' +
+    '<div class="card-icon" style="background:linear-gradient(135deg,'+a.icon+','+a.icon.replace('#','#')+')">' + a.svg + '</div>' +
+    '<div class="card-name">'+a.name+'</div><div class="card-desc">'+a.desc+'</div>' +
+    '<div class="card-bottom"><span class="card-price'+(isFree?' free':'')+'">'+a.price+'/ด</span>' +
+    (a.installed ? '<span style="font-size:10px;color:var(--accent-green);font-weight:600">✓ ติดตั้งแล้ว</span>' : '<button class="admin-action primary" style="font-size:11px;padding:4px 10px" data-aid="'+a.id+'" onclick="event.stopPropagation();subscribeApp(this.dataset.aid)">Subscribe</button>') +
+    '</div></div>';
+}
+function renderAppCards(apps) {
+  if (!apps) apps = window.APPS;
+  var t = document.getElementById('trendingApps');
+  var g = document.getElementById('allAppsGrid');
+  if (t) t.innerHTML = apps.map(function(a){ return makeAppCard(a, true); }).join('');
+  if (g) g.innerHTML = apps.map(makeGridCard).join('');
+}
+function renderMyApps() {
+  var g = document.getElementById('myAppsGrid');
+  var e = document.getElementById('myAppsEmpty');
+  if (!g || !e) return;
+  var installed = window.APPS.filter(function(a){ return a.installed; });
+  if (installed.length === 0) { g.innerHTML = ''; e.style.display = 'block'; }
+  else { e.style.display = 'none'; g.innerHTML = installed.map(makeGridCard).join(''); }
+}
+var APP_URLS = { 'etsy-pod': 'https://openhands.m2igen.com/etsy-dashboard/etsy', 'tiktok-ugc': 'https://openhands.m2igen.com/ugc/', 'super-appsheet': 'https://openhands.m2igen.com/pos/' };
+var appFullscreenActive = false;
+function launchApp(appId) {
+  var app = window.APPS.find(function(a){ return a.id === appId; });
+  if (!app) return;
+  if (app.installed) {
+    document.querySelectorAll('.page-desktop').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById('page-appview').classList.add('active');
+    document.getElementById('appViewTitle').textContent = app.name;
+    document.getElementById('appFullscreenTitle').textContent = app.name;
+    document.getElementById('appViewFrame').src = APP_URLS[appId] || '/apps/'+appId;
+    if (appFullscreenActive) toggleAppFullscreen();
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  } else { subscribeApp(appId); }
+}
+function toggleAppFullscreen() {
+  appFullscreenActive = !appFullscreenActive;
+  var header = document.getElementById('appViewHeader');
+  var frame = document.getElementById('appViewFrame');
+  var bar = document.getElementById('appFullscreenBar');
+  var handle = document.getElementById('appFullscreenHandle');
+  var btn = document.getElementById('appFullscreenBtn');
+  var sidebar = document.querySelector('.sidebar');
+  var mainHeader = document.querySelector('.main-header');
+  var mobileHeader = document.querySelector('.mobile-header');
+  var mobileNav = document.querySelector('.mobile-bottom-nav');
+  var mainScroll = document.querySelector('.main-scroll');
+  var appLayout = document.querySelector('.app-layout');
+  var page = document.getElementById('page-appview');
+  if (appFullscreenActive) {
+    // Hide ALL chrome
+    if (sidebar) sidebar.style.display = 'none';
+    if (mainHeader) mainHeader.style.display = 'none';
+    if (mobileHeader) mobileHeader.style.display = 'none';
+    if (mobileNav) mobileNav.style.display = 'none';
+    if (mainScroll) { mainScroll.style.padding = '0'; mainScroll.style.overflow = 'visible'; }
+    if (appLayout) { appLayout.style.paddingBottom = '0'; }
+    // Page becomes fullscreen container
+    page.style.position = 'fixed';
+    page.style.top = '0';
+    page.style.left = '0';
+    page.style.width = '100vw';
+    page.style.height = '100dvh';
+    page.style.zIndex = '9998';
+    page.style.background = '#000';
+    // Expand iframe
+    header.style.display = 'none';
+    frame.style.width = '100%';
+    frame.style.height = '100%';
+    frame.style.borderRadius = '0';
+    // Show pull handle + hidden bar
+    handle.style.display = 'block';
+    bar.style.display = 'flex';
+    bar.style.top = '-60px';
+    var arrow = document.getElementById('fsHandleArrow');
+    var tab = document.getElementById('fsHandleTab');
+    if (arrow) arrow.innerHTML = '▼';
+    if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.7)'; tab.style.borderTopWidth = '8px'; }
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    btn.title = 'ย่อกลับ';
+    // Tap anywhere outside bar to push it back up
+    clearTimeout(window._fsHideTimer);
+    clearTimeout(window._fsBarTimer);
+    page.onclick = function(e){
+      if (!bar.contains(e.target) && e.target !== handle && !handle.contains(e.target)) {
+        clearTimeout(window._fsBarTimer);
+        bar.style.top = '-60px';
+        handle.style.opacity = '1';
+        if (arrow) arrow.innerHTML = '▼';
+        if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.7)'; tab.style.borderTopWidth = '8px'; }
+        clearTimeout(window._fsHideTimer);
+      }
+    };
+    // Auto-hide handle after 3s, show on touch
+    window._fsHideTimer = setTimeout(function(){ handle.style.opacity = '0.3'; }, 3000);
+    page.ontouchstart = page.onmousemove = function(){
+      handle.style.opacity = '1';
+      clearTimeout(window._fsHideTimer);
+      window._fsHideTimer = setTimeout(function(){ handle.style.opacity = '0.3'; }, 3000);
+    };
+  } else {
+    // Restore all chrome
+    if (sidebar) sidebar.style.display = '';
+    if (mainHeader) mainHeader.style.display = '';
+    if (mobileHeader) mobileHeader.style.display = '';
+    if (mobileNav) mobileNav.style.display = '';
+    if (mainScroll) { mainScroll.style.padding = ''; mainScroll.style.overflow = ''; }
+    if (appLayout) { appLayout.style.paddingBottom = ''; }
+    // Restore page
+    page.style.position = '';
+    page.style.top = '';
+    page.style.left = '';
+    page.style.width = '';
+    page.style.height = '';
+    page.style.zIndex = '';
+    page.style.background = '';
+    page.onclick = page.ontouchstart = page.onmousemove = null;
+    clearTimeout(window._fsHideTimer);
+    clearTimeout(window._fsBarTimer);
+    // Restore iframe + header
+    header.style.display = '';
+    frame.style.width = '';
+    frame.style.height = 'calc(100vh - 140px)';
+    frame.style.borderRadius = '12px';
+    handle.style.display = 'none';
+    handle.style.opacity = '';
+    bar.style.display = 'none';
+    bar.style.top = '-60px';
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    btn.title = 'เต็มจอ';
+  }
+}
+function pullDownFullscreenBar(){
+  var bar = document.getElementById('appFullscreenBar');
+  var handle = document.getElementById('appFullscreenHandle');
+  var arrow = document.getElementById('fsHandleArrow');
+  var tab = document.getElementById('fsHandleTab');
+  var isDown = bar.style.top === '0px' || bar.style.top === '0';
+  clearTimeout(window._fsBarTimer);
+  if (isDown) {
+    // Push bar back up
+    bar.style.top = '-60px';
+    handle.style.opacity = '1';
+    if (arrow) arrow.innerHTML = '▼';
+    if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.7)'; tab.style.borderTopWidth = '8px'; }
+  } else {
+    // Pull bar down
+    bar.style.top = '0';
+    handle.style.opacity = '0';
+    if (arrow) arrow.innerHTML = '▲';
+    if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.3)'; tab.style.borderTopWidth = '5px'; }
+    // Auto-hide after 3s
+    window._fsBarTimer = setTimeout(function(){
+      bar.style.top = '-60px';
+      handle.style.opacity = '1';
+      if (arrow) arrow.innerHTML = '▼';
+      if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.7)'; tab.style.borderTopWidth = '8px'; }
+    }, 3000);
+  }
+}
+// Esc key exits fullscreen
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && appFullscreenActive) { toggleAppFullscreen(); }
+});
+function closeAppView() {
+  clearTimeout(window._fsHideTimer);
+  clearTimeout(window._fsBarTimer);
+  if (appFullscreenActive) toggleAppFullscreen();
+  document.getElementById('appViewFrame').src = '';
+  switchPage('today');
+}
+function subscribeApp(appId) {
+  var app = window.APPS.find(function(a){ return a.id === appId; });
+  if (!app) return;
+  if (!localStorage.getItem('m2i_token')) { alert('กรุณาเข้าสู่ระบบก่อนติดตั้งแอป'); showAuthModal(); return; }
+  if (confirm('Subscribe '+app.name+' - '+app.price+'/เดือน\n\nยืนยันการสมัครสมาชิก?')) {
+    app.installed = true;
+    var ins = JSON.parse(localStorage.getItem('m2i_installed') || '[]');
+    if (ins.indexOf(appId) < 0) ins.push(appId);
+    localStorage.setItem('m2i_installed', JSON.stringify(ins));
+    renderAppCards(); renderMyApps();
+    alert('✓ ติดตั้ง '+app.name+' สำเร็จ!\nกดที่แอปเพื่อเปิดใช้งาน');
+  }
+}
+function restoreInstalledApps() {
+  (JSON.parse(localStorage.getItem('m2i_installed') || '[]')).forEach(function(id) {
+    var app = window.APPS.find(function(a){ return a.id === id; });
+    if (app) app.installed = true;
+  });
+}
+(function(){ restoreInstalledApps(); setTimeout(function(){ renderAppCards(); renderMyApps(); }, 200); })();</script>
+
+<div class="lightbox-overlay" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-prev" onclick="prevLightbox()">‹</button>
+  <img id="lightbox-img" src="" alt="screenshot">
+  <button class="lightbox-next" onclick="nextLightbox()">›</button>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
+<script>
+var lightboxImages = ['/images/ss-home.png','/images/ss-translate.png','/images/ss-summary.png','/images/ss-settings.png'];
+var lightboxIndex = 0;
+function openLightbox(i){
+  lightboxIndex = i;
+  var lb = document.getElementById('lightbox');
+  var img = document.getElementById('lightbox-img');
+  img.src = lightboxImages[i];
+  document.getElementById('lightbox-counter').textContent = (i+1) + '/' + lightboxImages.length;
+  lb.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function prevLightbox(){
+  lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
+  openLightbox(lightboxIndex);
+}
+function nextLightbox(){
+  lightboxIndex = (lightboxIndex + 1) % lightboxImages.length;
+  openLightbox(lightboxIndex);
+}
+document.addEventListener('keydown',function(e){
+  if(!document.getElementById('lightbox').classList.contains('show')) return;
+  if(e.key === 'Escape') closeLightbox();
+  if(e.key === 'ArrowLeft') prevLightbox();
+  if(e.key === 'ArrowRight') nextLightbox();
+});
+document.getElementById('lightbox').addEventListener('click',function(e){
+  if(e.target === this) closeLightbox();
+});
+</script>
+
+
+
+<script>
+(function(){
+  var deferredPrompt = null;
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) return; // Don't show anything if already installed
+  
+  // Try to capture install prompt
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.querySelectorAll('.pwa-installable').forEach(function(el){ el.style.display = ''; });
+  });
+  
+  window.installPWA = function() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(r) {
+        if (r.outcome === 'accepted') {
+          document.querySelectorAll('.pwa-installable').forEach(function(el){ el.style.display = 'none'; });
+        }
+        deferredPrompt = null;
+      });
+    } else {
+      // No prompt available - show instructions
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        alert('📱 iOS Safari:\n\n1. กด Share (📤) ที่แถบด้านล่าง\n2. เลือก "Add to Home Screen"\n3. กด "Add" มุมขวาบน');
+      } else {
+        alert('📱 Android Chrome:\n\n1. กด ⋮ (สามจุด) มุมขวาบน\n2. เลือก "Add to Home Screen"\n3. กด "Install"');
+      }
+    }
+  };
+  
+  // Show banner immediately
+  var banner = document.getElementById('pwa-banner');
+  if (banner) banner.style.display = 'flex';
+})();
+
+
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(e){});
+}
+</script>
+
+</body>
+</html>
