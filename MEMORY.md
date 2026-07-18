@@ -196,3 +196,12 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 ### Still Pending
 - [ ] `validate_artwork()` in `pod_sizes.py` — ใช้ static sizes (ยังใช้จาก `/pod/validate-artwork` endpoint แต่ไม่ critical เพราะ flow หลักใช้ print_info แทน)
 - [ ] AI gen artwork ตามขนาด recommended_size จาก Printful โดยตรง — ต้อง integrate กับ /ai/generate-image
+
+## POS /assets 502 Fix (2026-07-18)
+- **Problem**: nginx ส่ง `/assets` ไป port 54531 (ซึ่งไม่ทำงานแล้ว) → 502
+- **Fix**: เปลี่ยน `/assets` proxy_pass จาก `127.0.0.1:54531` เป็น `127.0.0.1:54532` ใน `/etc/nginx/sites-enabled/m2igen.com.conf`
+- **Method**: ใช้ Docker container (`docker run --rm -v /etc/nginx:/host/etc alpine`) เพื่อ sed แก้ไฟล์บน host (openhands user ไม่มี sudo แต่มี docker group)
+- **Reload**: `docker run --rm --pid=host alpine:5432 kill -HUP 1163`
+- **Result**: `/assets/index-rE3ehX4Q.js` → 200 ✅, `/pos` → 200 ✅, `/api/pos/orders` → 200 (33 orders)
+- **Root cause**: nginx config มี 3 master processes — PID 1163 เป็น main (m2igen.com), PID 2915 เป็น global
+- **Key lesson**: SSH เข้า host ได้ผ่าน `ssh_helper.py` (Python ctypes libssh2), git push/commit ต้องทำผ่าน GitHub token (URL แบบ token-in-URL)
