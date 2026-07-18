@@ -291,7 +291,7 @@ async function listRecords(schemaSlug, queryParams = {}) {
     `SELECT * FROM records WHERE schema_id = $1 ${clause}
      ORDER BY ${sortClause} ${order}
      LIMIT $${values.length + 2} OFFSET $${values.length + 3}`,
-    [...values, limit, offset]
+    [schema.id, ...values, limit, offset]
   );
 
   // Resolve ERP fields if needed
