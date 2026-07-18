@@ -33,3 +33,5 @@ data/
 .tmp/
 services/wpilot-engine/.env
 .aider*
+*.pyc
+__pycache__/
