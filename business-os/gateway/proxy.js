@@ -16,6 +16,8 @@ const proxyConfigs = [
   { prefix: '/api/design', target: 'http://localhost:7456' },
   // Schema Engine — Dynamic schema + data CRUD (PostgreSQL)
   { prefix: '/api/schema', target: 'http://localhost:8100' },
+  // LINE Chat — LINE OA AI Chat Service
+  { prefix: '/api/line', target: 'http://localhost:8124' },
 ];
 
 const proxyMiddlewares = proxyConfigs.map((cfg) => ({
