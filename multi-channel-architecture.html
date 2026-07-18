@@ -1,0 +1,246 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Multi-Channel Messaging Architecture</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f8fafc;
+    --fg: #172033;
+    --muted: #5b6475;
+    --line: #64748b;
+    --neutral: #e2e8f0;
+    --input: #bfdbfe;
+    --process: #c7d2fe;
+    --storage: #99f6e4;
+    --external: #fde68a;
+    --risk: #fecaca;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a;
+      --fg: #e5e7eb;
+      --muted: #a3adbd;
+      --line: #94a3b8;
+      --neutral: #334155;
+      --input: #1d4ed8;
+      --process: #4338ca;
+      --storage: #0f766e;
+      --external: #92400e;
+      --risk: #991b1b;
+    }
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  main { max-width: 980px; margin: 32px auto; padding: 0 20px; }
+  svg { width: 100%; height: auto; display: block; }
+  .title { font-size: 20px; font-weight: 650; fill: var(--fg); }
+  .label { font-size: 14px; font-weight: 600; fill: var(--fg); }
+  .small { font-size: 12px; fill: var(--muted); }
+  .node { stroke: var(--line); stroke-width: 1; }
+  .neutral { fill: var(--neutral); }
+  .input { fill: var(--input); }
+  .process { fill: var(--process); }
+  .storage { fill: var(--storage); }
+  .external { fill: var(--external); }
+  .risk { fill: var(--risk); }
+  .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .edge-dash { stroke: var(--line); stroke-width: 1.5; fill: none; stroke-dasharray: 6 4; }
+  .zone { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 6 5; opacity: 0.8; rx: 8; }
+</style>
+<main>
+<svg viewBox="0 0 940 780" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="30" class="title">Multi-Channel Messaging Platform</text>
+
+  <!-- Legend -->
+  <rect x="20" y="44" width="12" height="12" class="input" stroke="var(--line)" stroke-width="1" />
+  <text x="38" y="55" class="small">External Channel</text>
+  <rect x="150" y="44" width="12" height="12" class="process" stroke="var(--line)" stroke-width="1" />
+  <text x="168" y="55" class="small">Adapter / Service</text>
+  <rect x="310" y="44" width="12" height="12" class="storage" stroke="var(--line)" stroke-width="1" />
+  <text x="328" y="55" class="small">Storage</text>
+  <rect x="420" y="44" width="12" height="12" class="external" stroke="var(--line)" stroke-width="1" />
+  <text x="438" y="55" class="small">ERP / External</text>
+
+  <!-- ============ ZONES ============ -->
+
+  <!-- Channel Zone -->
+  <rect x="30" y="72" width="878" height="110" class="zone" />
+  <text x="44" y="94" class="small" font-weight="600">Channel Layer — External</text>
+
+  <!-- Adapter Zone -->
+  <rect x="30" y="200" width="878" height="130" class="zone" />
+  <text x="44" y="222" class="small" font-weight="600">Adapter Layer — Per-Channel Microservices</text>
+
+  <!-- Core Zone -->
+  <rect x="30" y="348" width="878" height="180" class="zone" />
+  <text x="44" y="370" class="small" font-weight="600">Core Layer — Business Logic</text>
+
+  <!-- Data Zone -->
+  <rect x="30" y="546" width="548" height="100" class="zone" />
+  <text x="44" y="568" class="small" font-weight="600">Data Storage</text>
+
+  <!-- ERP Zone -->
+  <rect x="596" y="546" width="312" height="100" class="zone" />
+  <text x="610" y="568" class="small" font-weight="600">ERP System</text>
+
+  <!-- ============ CONNECTORS (behind nodes) ============ -->
+
+  <!-- LINE webhook arrows -->
+  <path d="M 140 182 L 140 225" class="edge" marker-end="url(#arrow)"/>
+  <path d="M 260 182 L 260 225" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- LINE Adapter → Core  -->
+  <path d="M 140 330 L 140 395" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- Telegram webhook arrows -->
+  <path d="M 470 182 L 470 225" class="edge" marker-end="url(#arrow)"/>
+  
+  <!-- Telegram Adapter → Core -->
+  <path d="M 470 330 L 470 395" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- WhatsApp webhook arrows -->
+  <path d="M 800 182 L 800 225" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- WhatsApp Adapter → Core -->
+  <path d="M 800 330 L 800 395" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- Core → adapters (outbound replies) -->
+  <path d="M 395 395 L 140 395" class="edge-dash" marker-end="url(#arrow-dash)"/>
+  <path d="M 395 395 L 470 395" class="edge-dash" marker-end="url(#arrow-dash)"/>
+  <path d="M 515 395 L 800 395" class="edge-dash" marker-end="url(#arrow-dash)"/>
+
+  <!-- Core → DB -->
+  <path d="M 260 480 L 260 575" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- Core → ERP Core -->
+  <path d="M 500 480 L 640 575" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- SMS fallback -->
+  <path d="M 830 138 L 830 225" class="edge-dash" marker-end="url(#arrow-dash)" opacity="0.5"/>
+
+  <!-- ============ CHANNEL LAYER NODES ============ -->
+
+  <!-- LINE -->
+  <rect x="90" y="100" width="100" height="60" rx="6" class="node input" />
+  <text x="140" y="131" text-anchor="middle" class="label">LINE</text>
+  <text x="140" y="148" text-anchor="middle" class="small">@138rbuez</text>
+  <!-- Webhook URL box -->
+  <rect x="75" y="165" width="130" height="20" rx="4" class="neutral" stroke="var(--line)" stroke-width="1" />
+  <text x="140" y="179" text-anchor="middle" class="small">/line/pos/webhook</text>
+
+  <!-- Telegram -->
+  <rect x="420" y="100" width="100" height="60" rx="6" class="node input" />
+  <text x="470" y="131" text-anchor="middle" class="label">Telegram</text>
+  <text x="470" y="148" text-anchor="middle" class="small">Bot Token XXX</text>
+  <!-- Webhook URL box -->
+  <rect x="405" y="165" width="130" height="20" rx="4" class="neutral" stroke="var(--line)" stroke-width="1" />
+  <text x="470" y="179" text-anchor="middle" class="small">/tg/webhook</text>
+
+  <!-- WhatsApp -->
+  <rect x="750" y="100" width="100" height="60" rx="6" class="node input" />
+  <text x="800" y="131" text-anchor="middle" class="label">WhatsApp</text>
+  <text x="800" y="148" text-anchor="middle" class="small">Cloud API</text>
+  <!-- Webhook URL box -->
+  <rect x="735" y="165" width="130" height="20" rx="4" class="neutral" stroke="var(--line)" stroke-width="1" />
+  <text x="800" y="179" text-anchor="middle" class="small">/wa/webhook</text>
+
+  <!-- SMS (future) -->
+  <text x="930" y="138" class="small" opacity="0.5">SMS?</text>
+
+  <!-- ============ ADAPTER LAYER NODES ============ -->
+
+  <!-- LINE Adapter -->
+  <rect x="80" y="230" width="120" height="80" rx="6" class="node process" />
+  <text x="140" y="256" text-anchor="middle" class="label">line-adapter</text>
+  <text x="140" y="274" text-anchor="middle" class="small">Port 8310</text>
+  <text x="140" y="290" text-anchor="middle" class="small">FastAPI + line-bot-sdk</text>
+  <text x="140" y="306" text-anchor="middle" class="small">Verify sig → normalize → forward</text>
+
+  <!-- Telegram Adapter -->
+  <rect x="410" y="230" width="120" height="80" rx="6" class="node process" />
+  <text x="470" y="256" text-anchor="middle" class="label">tg-adapter</text>
+  <text x="470" y="274" text-anchor="middle" class="small">Port 8320</text>
+  <text x="470" y="290" text-anchor="middle" class="small">FastAPI + python-telegram-bot</text>
+  <text x="470" y="306" text-anchor="middle" class="small">Auth → normalize → forward</text>
+
+  <!-- WhatsApp Adapter -->
+  <rect x="740" y="230" width="120" height="80" rx="6" class="node process" />
+  <text x="800" y="256" text-anchor="middle" class="label">wa-adapter</text>
+  <text x="800" y="274" text-anchor="middle" class="small">Port 8330</text>
+  <text x="800" y="290" text-anchor="middle" class="small">FastAPI + Meta API</text>
+  <text x="800" y="306" text-anchor="middle" class="small">Verify sig → normalize → forward</text>
+
+  <!-- ============ CORE LAYER NODES ============ -->
+
+  <!-- Main core box -->
+  <rect x="350" y="395" width="240" height="85" rx="6" class="node process" />
+  <text x="470" y="420" text-anchor="middle" class="label">messaging-core</text>
+  <text x="470" y="438" text-anchor="middle" class="small">Port 8300</text>
+  <text x="470" y="454" text-anchor="middle" class="small">⦿ Intent Router</text>
+  <text x="470" y="470" text-anchor="middle" class="small">⦿ Session Manager · State Machine</text>
+
+  <!-- Intent boxes -->
+  <rect x="80" y="395" width="130" height="55" rx="6" class="node neutral" />
+  <text x="145" y="418" text-anchor="middle" class="label">🍔 Menu</text>
+  <text x="145" y="436" text-anchor="middle" class="small">Browse products, categories</text>
+
+  <rect x="80" y="460" width="130" height="55" rx="6" class="node neutral" />
+  <text x="145" y="483" text-anchor="middle" class="label">📋 Order</text>
+  <text x="145" y="501" text-anchor="middle" class="small">Create, status, history</text>
+
+  <rect x="515" y="395" width="130" height="55" rx="6" class="node neutral" />
+  <text x="580" y="418" text-anchor="middle" class="label">💳 Payment</text>
+  <text x="580" y="436" text-anchor="middle" class="small">PromptPay, slip verify</text>
+
+  <rect x="515" y="460" width="130" height="55" rx="6" class="node neutral" />
+  <text x="580" y="483" text-anchor="middle" class="label">👤 Customer</text>
+  <text x="580" y="501" text-anchor="middle" class="small">Profile, chat history</text>
+
+  <!-- Connectors from handler boxes to core router -->
+  <path d="M 210 422 L 340 422" class="edge" marker-end="url(#arrow)"/>
+  <path d="M 210 487 L 340 487" class="edge" marker-end="url(#arrow)"/>
+  <path d="M 645 422 L 600 422" class="edge" marker-end="url(#arrow)"/>
+  <path d="M 645 487 L 600 487" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- ============ DATA STORAGE NODES ============ -->
+
+  <!-- SQLite DB -->
+  <rect x="180" y="560" width="160" height="64" rx="6" class="node storage" />
+  <text x="260" y="586" text-anchor="middle" class="label">SQLite</text>
+  <text x="260" y="603" text-anchor="middle" class="small">orders.db</text>
+  <text x="260" y="618" text-anchor="middle" class="small">sessions.db</text>
+
+  <!-- ERP MCP -->
+  <rect x="620" y="560" width="260" height="64" rx="6" class="node external" />
+  <text x="750" y="586" text-anchor="middle" class="label">ERP Core MCP</text>
+  <text x="750" y="603" text-anchor="middle" class="small">list_products · get_product · create_order · list_orders</text>
+  <text x="750" y="618" text-anchor="middle" class="small">IO via JSON-RPC over stdio</text>
+
+  <!-- ============ DEPLOYMENT BOX ============ -->
+
+  <!-- Nginx routing -->
+  <rect x="260" y="660" width="418" height="55" rx="6" class="node neutral" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="none" />
+  <text x="469" y="682" text-anchor="middle" class="label">🌐 nginx Routing (m2igen.com)</text>
+  <text x="469" y="700" text-anchor="middle" class="small">
+    /line/pos/ → :8310 | /tg/ → :8320 | /wa/ → :8330
+  </text>
+
+  <!-- ============ MARKER DEFINITIONS ============ -->
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--line)" />
+    </marker>
+    <marker id="arrow-dash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--line)" />
+    </marker>
+  </defs>
+
+</svg>
+</main>
+</html>

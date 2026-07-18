@@ -1,0 +1,297 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-taskbar: var(--taskbar);
+  --color-taskbar-foreground: var(--taskbar-foreground);
+  --radius: 0.625rem;
+}
+
+:root {
+  --background: oklch(0.96 0.01 240);
+  --foreground: oklch(0.15 0.02 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.02 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.02 240);
+  --primary: oklch(0.45 0.15 260);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.92 0.02 240);
+  --secondary-foreground: oklch(0.3 0.03 240);
+  --muted: oklch(0.94 0.01 240);
+  --muted-foreground: oklch(0.5 0.02 240);
+  --accent: oklch(0.85 0.1 280);
+  --accent-foreground: oklch(0.3 0.15 280);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.88 0.01 240);
+  --input: oklch(0.92 0.01 240);
+  --ring: oklch(0.45 0.15 260);
+  --sidebar: oklch(0.98 0.005 240);
+  --sidebar-foreground: oklch(0.2 0.02 240);
+  --taskbar: oklch(0.97 0.005 240 / 0.8);
+  --taskbar-foreground: oklch(0.2 0.02 240);
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: oklch(0.08 0.01 240);
+  --foreground: oklch(0.92 0.01 240);
+  --card: oklch(0.12 0.015 240);
+  --card-foreground: oklch(0.92 0.01 240);
+  --popover: oklch(0.12 0.015 240);
+  --popover-foreground: oklch(0.92 0.01 240);
+  --primary: oklch(0.55 0.2 260);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.18 0.02 240);
+  --secondary-foreground: oklch(0.8 0.02 240);
+  --muted: oklch(0.15 0.02 240);
+  --muted-foreground: oklch(0.6 0.02 240);
+  --accent: oklch(0.25 0.15 280);
+  --accent-foreground: oklch(0.85 0.1 280);
+  --destructive: oklch(0.45 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.2 0.02 240);
+  --input: oklch(0.18 0.02 240);
+  --ring: oklch(0.55 0.2 260);
+  --sidebar: oklch(0.1 0.015 240);
+  --sidebar-foreground: oklch(0.85 0.01 240);
+  --taskbar: oklch(0.12 0.015 240 / 0.85);
+  --taskbar-foreground: oklch(0.85 0.01 240);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Prompt', 'Sarabun', system-ui, -apple-system, sans-serif;
+}
+
+/* OS Window Effects */
+.os-window {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.dark .os-window {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.os-window-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--muted);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.os-window-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.os-window-dot.red { background: #ff5f56; }
+.os-window-dot.yellow { background: #ffbd2e; }
+.os-window-dot.green { background: #27c93f; }
+
+/* Taskbar */
+.taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: var(--taskbar);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 4px;
+  z-index: 50;
+}
+
+.taskbar-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--taskbar-foreground);
+  transition: background 0.15s;
+  font-size: 13px;
+}
+
+.taskbar-item:hover {
+  background: var(--secondary);
+}
+
+.taskbar-item.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Sidebar / Dock */
+.dock {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 48px;
+  width: 56px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 2px;
+  z-index: 40;
+}
+
+.dock-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--sidebar-foreground);
+  position: relative;
+}
+
+.dock-icon:hover {
+  background: var(--secondary);
+  transform: scale(1.05);
+}
+
+.dock-icon.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.dock-icon .badge-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Shell */
+.shell-main {
+  margin-left: 56px;
+  margin-bottom: 48px;
+  min-height: calc(100vh - 48px);
+  padding: 24px;
+}
+
+/* Desktop */
+.desktop {
+  position: fixed;
+  inset: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.desktop-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px;
+}
+
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 80px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  color: var(--foreground);
+  font-size: 11px;
+  transition: background 0.15s;
+}
+
+.desktop-icon:hover {
+  background: var(--secondary);
+}
+
+.desktop-icon svg {
+  width: 40px;
+  height: 40px;
+  opacity: 0.9;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
