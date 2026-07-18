@@ -190,6 +190,7 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 - ✅ **Schema Engine** registered as module #21 — slug: `schema-engine`, port 8100
 - Registry has 22 modules (CRM, POS, Payment, Image Gen, TikTok UGC, Etsy, etc.)
 - ✅ **Member Module** registered as module #22 — slug: `member`, uses Schema Engine member schema
+- ✅ **Reward Ledger** registered as module #23 — slug: `reward_ledger`, uses Schema Engine reward_ledger schema
 - Module API: `POST/GET /api/v1/modules`
 
 ### Still Pending
