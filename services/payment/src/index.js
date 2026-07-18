@@ -2,7 +2,8 @@
  * Business OS — Payment Module
  * Stripe subscription + invoice management
  */
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -50,9 +51,13 @@ app.get('/api/payment/admin/stats', (req, res) => {
   res.json(db.getDashboardStats());
 });
 
-// ── Start ──
-app.listen(config.port, () => {
-  console.log(`
+// ── Async Start ──
+async function start() {
+  // Initialize database (sql.js async init)
+  await db.init();
+
+  app.listen(config.port, () => {
+    console.log(`
 ╔══════════════════════════════════════════════╗
 ║    Business OS — Payment Module v1.0        ║
 ║  Port: ${config.port}                               ║
@@ -60,5 +65,11 @@ app.listen(config.port, () => {
 ║  Plans: ${config.plans.length} (${config.plans.map(p => p.id).join(', ')})             ║
 ║  Customers: ${db.listCustomers().length}                            ║
 ╚══════════════════════════════════════════════╝
-  `);
+    `);
+  });
+}
+
+start().catch(err => {
+  console.error('[payment] Failed to start:', err);
+  process.exit(1);
 });

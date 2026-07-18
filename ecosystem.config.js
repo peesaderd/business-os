@@ -10,5 +10,6 @@ module.exports = {
     { name: 'bos-video-gen',   script: './services/video-gen/server.js', env: { PORT: 8116 } },
     { name: 'bos-website',     script: './services/website-builder/server.js', env: { PORT: 8120 } },
     { name: 'bos-wordpress',   script: './services/wordpress/server.js',   env: { PORT: 8109 } },
+    { name: 'bos-payment',    script: './services/payment/src/index.js', env: { PORT: 8122 } },
   ]
 };

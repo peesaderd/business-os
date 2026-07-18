@@ -17,8 +17,8 @@ const notifier = require('../services/notifier');
 
 const router = express.Router();
 
-// ── Default PromptPay (Admin) ──
-const DEFAULT_PROMPTPAY = '0993946144';
+// ── Default PromptPay (จาก .env → PROMPTPAY_NUMBER) ──
+const DEFAULT_PROMPTPAY = config.promptpayNumber;
 
 // ── In-memory pending payments ──
 const pendingPayments = new Map();
@@ -46,8 +46,8 @@ router.post('/generate', async (req, res) => {
       return res.status(400).json({ error: 'Amount must be at least 1 THB' });
     }
 
-    // ✅ ใช้ PromptPay ของลูกค้าถ้ามี, ไม่ก็ใช้ของ Admin
-    const ppNumber = (promptpayNumber || DEFAULT_PROMPTPAY).replace(/[-\s]/g, '');
+    // ✅ ใช้ PromptPay ของลูกค้าถ้ามี, ไม่ก็ใช้ค่าเริ่มต้นจาก .env
+    const ppNumber = (promptpayNumber || config.promptpayNumber).replace(/[-\s]/g, '');
     if (!/^0\d{9}$/.test(ppNumber)) {
       return res.status(400).json({ error: 'Invalid PromptPay number. Must be 10 digits starting with 0' });
     }
@@ -390,7 +390,7 @@ router.post('/admin-confirm', async (req, res) => {
 
   const paymentId = `qr-${uuidv4().slice(0, 8)}`;
   const paymentRef = `ADM-${Date.now().toString(36).toUpperCase()}`;
-  const ppNumber = (promptpayNumber || DEFAULT_PROMPTPAY).replace(/[-\s]/g, '');
+  const ppNumber = (promptpayNumber || config.promptpayNumber).replace(/[-\s]/g, '');
 
   // Insert as paid
   db.db.prepare(`

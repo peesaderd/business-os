@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 module.exports = {
   port: parseInt(process.env.PORT || '8122'),
@@ -15,6 +16,7 @@ module.exports = {
     apiUrl: process.env.WPILOT_API_URL || 'http://localhost:8118/api/wpilot',
   },
   adminApiKey: process.env.ADMIN_API_KEY || 'bos_payment_admin_2026',
+  promptpayNumber: process.env.PROMPTPAY_NUMBER || '0993946144',
 
   // Product plans (sync with Stripe)
   plans: [
