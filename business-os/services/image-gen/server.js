@@ -253,6 +253,8 @@ app.post('/api/image/v1/generate', async (req, res) => {
       tenantId,
       provider,
       inputImage,
+      width,
+      height,
     } = req.body;
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
@@ -266,6 +268,8 @@ app.post('/api/image/v1/generate', async (req, res) => {
       provider: provider || 'prodia',
       modelTier: modelTier || 'fast',
       aspectRatio: aspectRatio || size || undefined,
+      width: parseInt(width) || undefined,
+      height: parseInt(height) || undefined,
       count: parseInt(count || '1', 10),
       upscale: upscale !== false,
       thaiModel: !!thaiModel,
