@@ -173,11 +173,17 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 - ✅ **PM2 ecosystem** → `services/schema-engine/ecosystem.config.cjs` (port 8100, all env vars)
 - ✅ **Gateway route** → `business-os/gateway/proxy.js` → `/api/schema → localhost:8100`
 
-### Still Pending (needs host/SSH — cannot do from container)
-- [ ] PostgreSQL setup on live server (create DB, user, run migration)
-- [ ] Copy service to host (`~/business-os/services/schema-engine/`)
-- [ ] Register PM2 + start on host
-- [ ] Test on m2igen.com
+### Deploy Status (2026-07-18)
+- ✅ **PostgreSQL** — DB `superapp_schema`, user `superapp` ✅
+- ✅ **PM2** — schema-engine running on port 8100 (pid 1278005) ✅
+- ✅ **nginx** — route `/api/schema/` → `localhost:8100` on m2igen.com ✅
+- ✅ **Gateway** — route `/api/schema/` in `proxy.js` (for BOS gateway when running)
+- ✅ **Test** — public API at `https://m2igen.com/api/schema/api/v1/schema` ✅
+- ✅ **Bugfix** — `listRecords` missing `schema.id` param fixed ✅
+
+### Cleanup (still pending but non-blocking)
+- [ ] Keep `ssh_helper.py` in workspace for future SSH access
+- [ ] `upload_b64.py` — helper for file transfer
 
 ### Still Pending
 - [ ] `validate_artwork()` in `pod_sizes.py` — ใช้ static sizes (ยังใช้จาก `/pod/validate-artwork` endpoint แต่ไม่ critical เพราะ flow หลักใช้ print_info แทน)
