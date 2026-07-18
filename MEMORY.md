@@ -188,7 +188,8 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 ### Module Registry (2026-07-18)
 - ✅ **ERP Modular** (port 8102) — started and running with PM2 (id:31)
 - ✅ **Schema Engine** registered as module #21 — slug: `schema-engine`, port 8100
-- Registry has 20+ modules (CRM, POS, Payment, Image Gen, TikTok UGC, Etsy, etc.)
+- Registry has 22 modules (CRM, POS, Payment, Image Gen, TikTok UGC, Etsy, etc.)
+- ✅ **Member Module** registered as module #22 — slug: `member`, uses Schema Engine member schema
 - Module API: `POST/GET /api/v1/modules`
 
 ### Still Pending
