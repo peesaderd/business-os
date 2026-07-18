@@ -191,6 +191,13 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 - Registry has 22 modules (CRM, POS, Payment, Image Gen, TikTok UGC, Etsy, etc.)
 - ✅ **Member Module** registered as module #22 — slug: `member`, uses Schema Engine member schema
 - ✅ **Reward Ledger** registered as module #23 — slug: `reward_ledger`, uses Schema Engine reward_ledger schema
+
+### Schema Engine → SuperAppsheet Integration (2026-07-18)
+- ✅ **schema_engine_client.py** — REST client for Schema Engine member + reward_ledger CRUD
+- ✅ **pos_engine.py** — get_members() now fetches from Schema Engine first, then ERP Core MCP, then local MEMBERS
+- ✅ **update_member()** — syncs to Schema Engine first (auto-create if new), then ERP Core, then local
+- ✅ **Reward Ledger** registered as module #23 in ERP Modular
+- **Architecture**: Schema Engine = primary member store, ERP Core MCP = optional fallback
 - Module API: `POST/GET /api/v1/modules`
 
 ### Still Pending
