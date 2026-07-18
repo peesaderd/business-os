@@ -185,6 +185,12 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 - [ ] Keep `ssh_helper.py` in workspace for future SSH access
 - [ ] `upload_b64.py` — helper for file transfer
 
+### Module Registry (2026-07-18)
+- ✅ **ERP Modular** (port 8102) — started and running with PM2 (id:31)
+- ✅ **Schema Engine** registered as module #21 — slug: `schema-engine`, port 8100
+- Registry has 20+ modules (CRM, POS, Payment, Image Gen, TikTok UGC, Etsy, etc.)
+- Module API: `POST/GET /api/v1/modules`
+
 ### Still Pending
 - [ ] `validate_artwork()` in `pod_sizes.py` — ใช้ static sizes (ยังใช้จาก `/pod/validate-artwork` endpoint แต่ไม่ critical เพราะ flow หลักใช้ print_info แทน)
 - [ ] AI gen artwork ตามขนาด recommended_size จาก Printful โดยตรง — ต้อง integrate กับ /ai/generate-image
