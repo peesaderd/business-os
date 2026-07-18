@@ -477,16 +477,17 @@ class QueueEngine extends EventEmitter {
 
       this.queue = (data.queue || []).map(byNumber).filter(Boolean);
       this.serving = (data.serving || []).map(byNumber).filter(Boolean);
-    // Re-instate no-show timers for called tickets (lost on restart)
-    for (const ticket of this.serving) {
-      if (ticket.status === 'called' && ticket.calledAt) {
-        const elapsed = Date.now() - ticket.calledAt;
-        const remaining = Math.max(0, this.noShowTimeoutMinutes * 60 * 1000 - elapsed);
-        ticket._noShowTimer = setTimeout(() => {
-          this._markNoShow(ticket.ticketNumber);
-        }, remaining);
+
+      // Re-instate no-show timers for called tickets (lost on restart)
+      for (const ticket of this.serving) {
+        if (ticket.status === 'called' && ticket.calledAt) {
+          const elapsed = Date.now() - ticket.calledAt;
+          const remaining = Math.max(0, this.noShowTimeoutMinutes * 60 * 1000 - elapsed);
+          ticket._noShowTimer = setTimeout(() => {
+            this._markNoShow(ticket.ticketNumber);
+          }, remaining);
+        }
       }
-    }
       this.completed = (data.completed || []).map(byNumber).filter(Boolean);
       this.skipped = (data.skipped || []).map(byNumber).filter(Boolean);
       this.noShows = (data.noShows || []).map(byNumber).filter(Boolean);
