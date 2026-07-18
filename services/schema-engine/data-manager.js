@@ -105,7 +105,7 @@ function validateData(data, fields) {
 function buildWhereClause(params, fields) {
   const clauses = [];
   const values = [];
-  let idx = 1;
+  let idx = 2; // $1 is reserved for schema_id in listRecords
 
   // text search across all string fields
   if (params.search) {
