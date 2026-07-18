@@ -1,0 +1,1 @@
+cd /home/openhands/erp-stack && git add prompt-builder-service/recipes/tus_pas_15s.json prompt-builder-service/recipes/tus_comparison_15s.json modules/video/script_gen.py && git commit -m "feat: 15s recipes + script_gen timing constraints"

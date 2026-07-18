@@ -510,8 +510,10 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;letter-spacing:-.01e
         <button onclick="toggleAppFullscreen()" style="background:rgba(255,255,255,.2);border:none;color:#fff;cursor:pointer;font-size:13px;padding:6px 14px;border-radius:14px;font-weight:600;white-space:nowrap">ย่อ</button>
       </div>
       <div id="appFullscreenHandle" style="display:none;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:10000;cursor:pointer;transition:opacity .3s" onclick="pullDownFullscreenBar()">
-        <div id="fsHandleTab" style="width:40px;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:8px solid rgba(255,255,255,.7);border-radius:0 0 2px 2px;margin:0 auto;transition:border-color .3s, border-width .3s"></div>
-        <div id="fsHandleArrow" style="text-align:center;font-size:10px;color:rgba(255,255,255,.5);line-height:1;margin-top:2px;transition:transform .3s">▼</div>
+        <svg id="fsHandleTab" width="64" height="18" viewBox="0 0 64 18" style="display:block;margin:0 auto;transition:opacity .3s">
+          <polygon points="16,0 48,0 64,18 0,18" fill="rgba(255,255,255,.7)" stroke="rgba(255,255,255,.3)" stroke-width="1" stroke-linejoin="round"/>
+        </svg>
+        <div id="fsHandleArrow" style="text-align:center;font-size:11px;color:rgba(255,255,255,.6);line-height:1;margin-top:4px;transition:transform .3s">▼</div>
       </div>
     </div>
 
@@ -1271,8 +1273,8 @@ function toggleAppFullscreen() {
     bar.style.top = '-60px';
     var arrow = document.getElementById('fsHandleArrow');
     var tab = document.getElementById('fsHandleTab');
-    if (arrow) arrow.innerHTML = '▼';
-    if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.7)'; tab.style.borderTopWidth = '8px'; }
+    if (arrow) { arrow.innerHTML = '▼'; arrow.style.color = 'rgba(255,255,255,.6)'; }
+    if (tab) { tab.style.opacity = '0.8'; }
     btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
     btn.title = 'ย่อกลับ';
     // Tap anywhere outside bar to push it back up
@@ -1283,8 +1285,8 @@ function toggleAppFullscreen() {
         clearTimeout(window._fsBarTimer);
         bar.style.top = '-60px';
         handle.style.opacity = '1';
-        if (arrow) arrow.innerHTML = '▼';
-        if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.7)'; tab.style.borderTopWidth = '8px'; }
+        if (arrow) { arrow.innerHTML = '▼'; arrow.style.color = 'rgba(255,255,255,.6)'; }
+        if (tab) { tab.style.opacity = '0.8'; }
         clearTimeout(window._fsHideTimer);
       }
     };
@@ -1338,20 +1340,20 @@ function pullDownFullscreenBar(){
     // Push bar back up
     bar.style.top = '-60px';
     handle.style.opacity = '1';
-    if (arrow) arrow.innerHTML = '▼';
-    if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.7)'; tab.style.borderTopWidth = '8px'; }
+    if (arrow) { arrow.innerHTML = '▼'; arrow.style.color = 'rgba(255,255,255,.6)'; }
+    if (tab) { tab.style.opacity = '0.8'; }
   } else {
     // Pull bar down
     bar.style.top = '0';
     handle.style.opacity = '0';
-    if (arrow) arrow.innerHTML = '▲';
-    if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.3)'; tab.style.borderTopWidth = '5px'; }
+    if (arrow) { arrow.innerHTML = '▲'; arrow.style.color = 'rgba(255,255,255,.3)'; }
+    if (tab) { tab.style.opacity = '0.25'; }
     // Auto-hide after 3s
     window._fsBarTimer = setTimeout(function(){
       bar.style.top = '-60px';
       handle.style.opacity = '1';
-      if (arrow) arrow.innerHTML = '▼';
-      if (tab) { tab.style.borderTopColor = 'rgba(255,255,255,.7)'; tab.style.borderTopWidth = '8px'; }
+      if (arrow) { arrow.innerHTML = '▼'; arrow.style.color = 'rgba(255,255,255,.6)'; }
+      if (tab) { tab.style.opacity = '0.8'; }
     }, 3000);
   }
 }

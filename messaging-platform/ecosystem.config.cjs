@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "msg-core",
-      cwd: __dirname,
+      cwd: ".",
       script: "uvicorn",
       args: "core.server:app --host 127.0.0.1 --port 8300",
       interpreter: "python3",
@@ -14,7 +14,7 @@ module.exports = {
     },
     {
       name: "line-adapter",
-      cwd: __dirname,
+      cwd: ".",
       script: "uvicorn",
       args: "adapters.line_adapter:app --host 127.0.0.1 --port 8310",
       interpreter: "python3",
@@ -26,7 +26,7 @@ module.exports = {
     },
     {
       name: "tg-adapter",
-      cwd: __dirname,
+      cwd: ".",
       script: "uvicorn",
       args: "adapters.tg_adapter:app --host 127.0.0.1 --port 8320",
       interpreter: "python3",
@@ -37,7 +37,7 @@ module.exports = {
     },
     {
       name: "wa-adapter",
-      cwd: __dirname,
+      cwd: ".",
       script: "uvicorn",
       args: "adapters.wa_adapter:app --host 127.0.0.1 --port 8330",
       interpreter: "python3",
