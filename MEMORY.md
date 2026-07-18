@@ -128,6 +128,57 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 - Poster: 12000x9000px, `default` placement
 - Metal Print: 10875x7275px, `default` placement
 
+## Schema Engine (2026-07-18)
+### What was built
+- **Location**: `services/schema-engine/` — Node.js Express, port 8100
+- **6 files**, 1980 lines total
+
+### Core Components
+| File | Lines | Purpose |
+|------|-------|---------|
+| `server.js` | 522 | Express server + all API routes + startup |
+| `schema-manager.js` | 204 | Schema CRUD (create/list/get/update/delete/toggle) |
+| `data-manager.js` | 422 | Dynamic data CRUD + JSONB validation + ERP field resolution + query builder |
+| `template-registry.js` | 585 | 5 pre-built templates (member, queue_ticket, booking_slot, pos_order, reward_ledger) |
+| `db.js` | 136 | PostgreSQL pool + auto-migration (creates schemas + records tables + GIN index) |
+| `erp-client.js` | 111 | ERP Core MCP client (read members, rewards, products) |
+
+### APIs
+- `POST/GET/PUT/DELETE /api/v1/schema` — Schema CRUD
+- `POST/GET/PUT/DELETE /api/v1/data/:schema[/:id]` — Dynamic data CRUD with validation + pagination + filtering
+- `POST /api/v1/template/:name/install` — Create schema from template
+- `POST /api/v1/query` — AI-structured query (search, aggregate, relation) for OpenClaw
+- `GET /api/v1/schema-info` — Full metadata dump for AI to understand all schemas
+- `POST /api/v1/sync/erp-members` — Pull ERP members into member schema
+
+### Tech
+- **Node.js Express** — same stack as other services
+- **PostgreSQL** — single `records` table with JSONB data column per schema
+- **GIN index** on data JSONB for fast field-level queries
+
+### Templates (5)
+1. **member** — fields from ERP (erp_id, name, phone, email, points, tier) + local extensions (tags, preferences, line_user_id, notes)
+2. **queue_ticket** — ticket_number, service_type, status, priority, party_size, source
+3. **booking_slot** — customer, service, start/end time, staff, price, deposit
+4. **pos_order** — order_number, items (array), subtotal, discount, tax, grand_total, payment
+5. **reward_ledger** — member relation, earn/redeem/expire, balance tracking
+
+### Key Design Decision
+- **Relations handled by AI** (OpenClaw) — no foreign keys, no JOINs
+- Schema Engine provides raw data + full metadata (`GET /api/v1/schema-info`)
+- OpenClaw reads schema-info → understands data model → resolves relations at query time
+- AI query endpoint `POST /api/v1/query` supports search, aggregate, and relation modes
+
+### Deployment Config (added in workspace)
+- ✅ **PM2 ecosystem** → `services/schema-engine/ecosystem.config.cjs` (port 8100, all env vars)
+- ✅ **Gateway route** → `business-os/gateway/proxy.js` → `/api/schema → localhost:8100`
+
+### Still Pending (needs host/SSH — cannot do from container)
+- [ ] PostgreSQL setup on live server (create DB, user, run migration)
+- [ ] Copy service to host (`~/business-os/services/schema-engine/`)
+- [ ] Register PM2 + start on host
+- [ ] Test on m2igen.com
+
 ### Still Pending
 - [ ] `validate_artwork()` in `pod_sizes.py` — ใช้ static sizes (ยังใช้จาก `/pod/validate-artwork` endpoint แต่ไม่ critical เพราะ flow หลักใช้ print_info แทน)
 - [ ] AI gen artwork ตามขนาด recommended_size จาก Printful โดยตรง — ต้อง integrate กับ /ai/generate-image

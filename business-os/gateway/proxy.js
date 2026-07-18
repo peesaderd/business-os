@@ -14,6 +14,8 @@ const proxyConfigs = [
   { prefix: '/api/payment', target: 'http://localhost:8122' },
   // Open Design — AI Design Generation Engine
   { prefix: '/api/design', target: 'http://localhost:7456' },
+  // Schema Engine — Dynamic schema + data CRUD (PostgreSQL)
+  { prefix: '/api/schema', target: 'http://localhost:8100' },
 ];
 
 const proxyMiddlewares = proxyConfigs.map((cfg) => ({
