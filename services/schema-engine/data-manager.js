@@ -217,9 +217,10 @@ async function resolveErpFields(schema, localData) {
  * Create a record.
  * @param {string} schemaSlug
  * @param {object} data
+ * @param {object} [client]  — optional pg client for transactional use
  * @returns {Promise<object>}
  */
-async function createRecord(schemaSlug, data) {
+async function createRecord(schemaSlug, data, client) {
   const schema = await schemaMgr.getSchema(schemaSlug);
   if (!schema) throw Object.assign(new Error(`Schema "${schemaSlug}" not found`), { status: 404 });
 
@@ -231,7 +232,8 @@ async function createRecord(schemaSlug, data) {
     if (field.unique && data[field.name] !== undefined && data[field.name] !== null) {
       const check = await db.query(
         `SELECT id FROM records WHERE schema_id = $1 AND data->>'${field.name}' = $2 LIMIT 1`,
-        [schema.id, String(data[field.name])]
+        [schema.id, String(data[field.name])],
+        client
       );
       if (check.rows.length > 0) {
         throw Object.assign(new Error(`${field.name}: value "${data[field.name]}" already exists`), { status: 409 });
@@ -249,7 +251,8 @@ async function createRecord(schemaSlug, data) {
 
   const result = await db.query(
     `INSERT INTO records (schema_id, data) VALUES ($1, $2) RETURNING *`,
-    [schema.id, JSON.stringify(enriched)]
+    [schema.id, JSON.stringify(enriched)],
+    client
   );
 
   return { ...result.rows[0], schema: schema.slug };
@@ -412,6 +415,168 @@ async function deleteRecord(schemaSlug, recordId) {
   return result.rowCount > 0;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// BATCH OPERATIONS (with transaction per batch)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Batch create records.
+ *
+ * - Validates ALL records upfront (caller sees all errors at once)
+ * - Then inserts in batches of `batchSize` within individual transactions
+ * - If a batch fails, only that batch rolls back
+ * - Previously committed batches are preserved
+ *
+ * @param {string} schemaSlug
+ * @param {Array<object>} records  — array of data objects
+ * @param {number} [batchSize=100]  — records per batch transaction
+ * @returns {Promise<{created: number, total: number}>}
+ */
+async function batchCreateRecords(schemaSlug, records, batchSize = 100) {
+  if (!Array.isArray(records) || records.length === 0) {
+    return { created: 0, total: 0 };
+  }
+
+  const schema = await schemaMgr.getSchema(schemaSlug);
+  if (!schema) throw Object.assign(new Error(`Schema "${schemaSlug}" not found`), { status: 404 });
+
+  const fields = schema.fields || [];
+  const safeBatchSize = Math.min(500, Math.max(1, batchSize || 100));
+
+  // ── Validate ALL records upfront ──────────────────────────────
+  const allErrors = [];
+  const validRecords = [];
+  for (let i = 0; i < records.length; i++) {
+    const { valid, errors } = validateData(records[i], fields);
+    if (!valid) {
+      allErrors.push({ index: i, errors });
+    } else {
+      // Apply defaults
+      const enriched = { ...records[i] };
+      for (const field of fields) {
+        if (enriched[field.name] === undefined && field.default !== undefined && field.default !== null) {
+          enriched[field.name] = field.default;
+        }
+      }
+      validRecords.push(enriched);
+    }
+  }
+
+  if (allErrors.length > 0) {
+    throw Object.assign(new Error(
+      `Validation failed for ${allErrors.length}/${records.length} records: ` +
+      allErrors.map(e => `[${e.index}] ${e.errors.join('; ')}`).join(' | ')
+    ), { status: 400 });
+  }
+
+  // ── Batch insert ──────────────────────────────────────────────
+  let created = 0;
+  for (let b = 0; b < validRecords.length; b += safeBatchSize) {
+    const batch = validRecords.slice(b, b + safeBatchSize);
+
+    await db.withTransaction(async (client) => {
+      for (const data of batch) {
+        await db.query(
+          `INSERT INTO records (schema_id, data) VALUES ($1, $2)`,
+          [schema.id, JSON.stringify(data)],
+          client
+        );
+        created++;
+      }
+    });
+  }
+
+  return { created, total: records.length };
+}
+
+/**
+ * Batch update records.
+ *
+ * - Validates ALL records upfront (checks that IDs exist + data is valid)
+ * - Then updates in batches of `batchSize` within individual transactions
+ * - If a batch fails, only that batch rolls back
+ *
+ * @param {string} schemaSlug
+ * @param {Array<{id: string, data: object}>} updates  — array of { id, data }
+ * @param {number} [batchSize=100]  — updates per batch transaction
+ * @returns {Promise<{updated: number, total: number}>}
+ */
+async function batchUpdateRecords(schemaSlug, updates, batchSize = 100) {
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return { updated: 0, total: 0 };
+  }
+
+  const schema = await schemaMgr.getSchema(schemaSlug);
+  if (!schema) throw Object.assign(new Error(`Schema "${schemaSlug}" not found`), { status: 404 });
+
+  const fields = schema.fields || [];
+  const safeBatchSize = Math.min(500, Math.max(1, batchSize || 100));
+
+  // ── Fetch all existing records upfront (single query) ────────
+  const ids = updates.map(u => u.id).filter(Boolean);
+  if (ids.length === 0) {
+    throw Object.assign(new Error('No valid IDs provided'), { status: 400 });
+  }
+
+  const existingResult = await db.query(
+    `SELECT id, data FROM records WHERE schema_id = $1 AND id = ANY($2)`,
+    [schema.id, ids]
+  );
+  const existingMap = new Map(existingResult.rows.map(r => [r.id, r]));
+
+  // ── Validate ALL records upfront ──────────────────────────────
+  const allErrors = [];
+  const validUpdates = [];
+
+  for (let i = 0; i < updates.length; i++) {
+    const { id, data } = updates[i];
+    if (!id) {
+      allErrors.push({ index: i, errors: ['id is required'] });
+      continue;
+    }
+
+    const existing = existingMap.get(id);
+    if (!existing) {
+      allErrors.push({ index: i, errors: [`Record "${id}" not found`] });
+      continue;
+    }
+
+    const mergedData = { ...existing.data, ...data };
+    const { valid, errors } = validateData(mergedData, fields);
+    if (!valid) {
+      allErrors.push({ index: i, errors });
+    } else {
+      validUpdates.push({ id, data: mergedData });
+    }
+  }
+
+  if (allErrors.length > 0) {
+    throw Object.assign(new Error(
+      `Validation failed for ${allErrors.length}/${updates.length} records: ` +
+      allErrors.map(e => `[${e.index}] ${e.errors.join('; ')}`).join(' | ')
+    ), { status: 400 });
+  }
+
+  // ── Batch update ──────────────────────────────────────────────
+  let updated = 0;
+  for (let b = 0; b < validUpdates.length; b += safeBatchSize) {
+    const batch = validUpdates.slice(b, b + safeBatchSize);
+
+    await db.withTransaction(async (client) => {
+      for (const { id, data } of batch) {
+        await db.query(
+          `UPDATE records SET data = $1 WHERE id = $2 AND schema_id = $3`,
+          [JSON.stringify(data), id, schema.id],
+          client
+        );
+        updated++;
+      }
+    });
+  }
+
+  return { updated, total: updates.length };
+}
+
 module.exports = {
   createRecord,
   listRecords,
@@ -419,4 +584,6 @@ module.exports = {
   updateRecord,
   deleteRecord,
   resolveErpFields,
+  batchCreateRecords,
+  batchUpdateRecords,
 };

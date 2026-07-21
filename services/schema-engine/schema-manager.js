@@ -64,9 +64,10 @@ function slugify(name) {
 /**
  * Create a new schema definition.
  * @param {{name:string, slug?:string, description?:string, fields:Array, config?:object, template?:string}} input
+ * @param {object} [client]  — optional pg client for transactional use
  * @returns {Promise<object>}
  */
-async function createSchema(input) {
+async function createSchema(input, client) {
   const { name, description, fields, config, template } = input;
 
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -80,7 +81,7 @@ async function createSchema(input) {
   const cfg = config || {};
 
   // Check slug uniqueness
-  const existing = await db.query('SELECT id FROM schemas WHERE slug = $1', [slug]);
+  const existing = await db.query('SELECT id FROM schemas WHERE slug = $1', [slug], client);
   if (existing.rows.length > 0) {
     throw Object.assign(new Error(`Schema slug "${slug}" already exists`), { status: 409 });
   }
@@ -89,7 +90,8 @@ async function createSchema(input) {
     `INSERT INTO schemas (name, slug, description, fields, config, template)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [name.trim(), slug, (description || '').trim(), JSON.stringify(fields), JSON.stringify(cfg), template || null]
+    [name.trim(), slug, (description || '').trim(), JSON.stringify(fields), JSON.stringify(cfg), template || null],
+    client
   );
 
   return result.rows[0];

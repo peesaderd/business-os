@@ -226,6 +226,63 @@ app.delete('/api/v1/data/:schema/:id', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
+// BATCH DATA OPERATIONS
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/v1/data/:schema/batch
+ * Batch create or update records within a schema.
+ *
+ * Request body:
+ *   { "records": [...] }         — batch create
+ *   { "updates": [{id, data}] }  — batch update
+ *   { "batchSize": 100 }         — optional override (default 100, max 500)
+ *
+ * Each batch runs in its own transaction.
+ * On error, returns partial progress + error message.
+ */
+app.post('/api/v1/data/:schema/batch', async (req, res) => {
+  try {
+    const { records, updates, batchSize } = req.body;
+
+    if (!records && !updates) {
+      return res.status(400).json({
+        success: false,
+        error: 'Must provide "records" (create) or "updates" (update) array',
+      });
+    }
+
+    if (records && updates) {
+      return res.status(400).json({
+        success: false,
+        error: 'Provide either "records" or "updates", not both',
+      });
+    }
+
+    if (records) {
+      const result = await dataMgr.batchCreateRecords(
+        req.params.schema,
+        records,
+        batchSize
+      );
+      return res.status(201).json({ success: true, action: 'create', ...result });
+    }
+
+    if (updates) {
+      const result = await dataMgr.batchUpdateRecords(
+        req.params.schema,
+        updates,
+        batchSize
+      );
+      return res.json({ success: true, action: 'update', ...result });
+    }
+  } catch (err) {
+    const status = err.status || 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
 // TEMPLATES
 // ═══════════════════════════════════════════════════════════════════
 
@@ -432,56 +489,108 @@ app.get('/api/v1/schema-info', async (_req, res) => {
 /**
  * POST /api/v1/sync/erp-members
  * Pull member data from ERP Core and upsert into member schema.
+ *
+ * Uses batch transactions (default 50 records per batch):
+ *   - Each batch runs in its own transaction (BEGIN + COMMIT)
+ *   - If a batch fails, only that batch rolls back
+ *   - Previously completed batches are preserved
+ *   - Accepts optional body.batchSize to override (max 200)
+ *
+ * Fail-fast: when a batch fails, the error is returned with a summary
+ * of what was synced/created so far across successful batches.
  */
 app.post('/api/v1/sync/erp-members', async (req, res) => {
   try {
-    const { search } = req.body;
-    const erpMembers = await erp.searchMembers(search || '');
-    let synced = 0;
-    let created = 0;
+    const { search, batchSize: rawBatchSize } = req.body;
+    const batchSize = Math.min(200, Math.max(1, parseInt(rawBatchSize, 10) || 50));
 
+    const erpMembers = await erp.searchMembers(search || '');
     const schema = await schemaMgr.getSchema('member');
     if (!schema) {
       return res.status(400).json({ success: false, error: 'Member schema not installed. Run template first.' });
     }
 
-    for (const m of erpMembers) {
-      // Check if already synced via erp_id
-      const existing = await db.query(
-        `SELECT id FROM records WHERE schema_id = $1 AND data->>'erp_id' = $2 LIMIT 1`,
-        [schema.id, String(m.id)]
-      );
+    let synced = 0;
+    let created = 0;
+    const total = erpMembers.length;
+    const batchResults = [];
 
-      const memberData = {
-        erp_id: String(m.id),
-        full_name: m.name || '',
-        phone: m.phone || '',
-        email: m.email || '',
-        points: m.points || m.rewardPoints || 0,
-        tier: m.tier || 'bronze',
-        is_active: m.is_active !== false,
-      };
+    for (let b = 0; b < total; b += batchSize) {
+      const batch = erpMembers.slice(b, b + batchSize);
+      const batchNum = Math.floor(b / batchSize) + 1;
 
-      if (existing.rows.length > 0) {
-        // Update ERP fields
-        await db.query(
-          `UPDATE records SET data = data || $1 WHERE id = $2`,
-          [JSON.stringify(memberData), existing.rows[0].id]
-        );
-        synced++;
-      } else {
-        // Create new
-        await db.query(
-          `INSERT INTO records (schema_id, data) VALUES ($1, $2)`,
-          [schema.id, JSON.stringify(memberData)]
-        );
-        created++;
-      }
+      // Each batch runs in its own transaction
+      const result = await db.withTransaction(async (client) => {
+        let batchSynced = 0;
+        let batchCreated = 0;
+
+        for (const m of batch) {
+          const existing = await db.query(
+            `SELECT id FROM records WHERE schema_id = $1 AND data->>'erp_id' = $2 LIMIT 1`,
+            [schema.id, String(m.id)],
+            client
+          );
+
+          const memberData = {
+            erp_id: String(m.id),
+            full_name: m.name || '',
+            phone: m.phone || '',
+            email: m.email || '',
+            points: m.points || m.rewardPoints || 0,
+            tier: m.tier || 'bronze',
+            is_active: m.is_active !== false,
+          };
+
+          if (existing.rows.length > 0) {
+            await db.query(
+              `UPDATE records SET data = data || $1 WHERE id = $2`,
+              [JSON.stringify(memberData), existing.rows[0].id],
+              client
+            );
+            batchSynced++;
+          } else {
+            await db.query(
+              `INSERT INTO records (schema_id, data) VALUES ($1, $2)`,
+              [schema.id, JSON.stringify(memberData)],
+              client
+            );
+            batchCreated++;
+          }
+        }
+
+        return { synced: batchSynced, created: batchCreated };
+      });
+
+      synced += result.synced;
+      created += result.created;
+      batchResults.push({
+        batch: batchNum,
+        count: batch.length,
+        synced: result.synced,
+        created: result.created,
+      });
     }
 
-    res.json({ success: true, synced, created, total: erpMembers.length });
+    res.json({
+      success: true,
+      synced,
+      created,
+      total,
+      batches: batchResults.length,
+      batchResults,
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    // Fail-fast: return partial progress + error
+    const errorResponse = {
+      success: false,
+      error: err.message,
+      partial: { synced, created },
+    };
+    // If any batches completed, include them
+    if (typeof synced !== 'undefined' && typeof created !== 'undefined') {
+      errorResponse.partial = { synced, created };
+    }
+    res.status(500).json(errorResponse);
   }
 });
 
@@ -504,6 +613,18 @@ async function start() {
       await templates.installTemplate('pos_order');
       await templates.installTemplate('reward_ledger');
       console.log('[SchemaEngine] Default templates installed');
+    }
+
+    // Auto-seed video_recipe template (re-run safe — silently skips if exists)
+    try {
+      await templates.installTemplate('video_recipe');
+      console.log('[SchemaEngine] video_recipe template installed + seeded');
+    } catch (err) {
+      if (err.message && err.message.includes('already exists')) {
+        console.log('[SchemaEngine] video_recipe already installed, skipping');
+      } else {
+        console.warn('[SchemaEngine] video_recipe install warning:', err.message);
+      }
     }
 
     app.listen(PORT, () => {

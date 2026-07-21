@@ -114,16 +114,47 @@ async function migrate() {
 }
 
 /**
- * Execute a parameterized query
+ * Execute a parameterized query.
+ * Accepts optional `client` for transactional queries.
+ * When client is provided, uses client.query() instead of pool.query().
  */
-async function query(text, params = []) {
+async function query(text, params = [], client) {
   const start = Date.now();
-  const result = await pool.query(text, params);
+  const result = client
+    ? await client.query(text, params)
+    : await pool.query(text, params);
   const duration = Date.now() - start;
   if (process.env.NODE_ENV === 'development' || process.env.LOG_QUERIES) {
     console.log(`[DB] query ${duration}ms — ${text.slice(0, 120)}`);
   }
   return result;
+}
+
+/**
+ * Run a callback inside a PostgreSQL transaction.
+ *
+ * - BEGINs a transaction
+ * - Passes the client to `callback(client)`
+ * - COMMITs on success
+ * - ROLLBACKs on error
+ * - Releases the client to the pool in either case
+ *
+ * @param {function} callback  — async (client) => result
+ * @returns {Promise<*>}  — the callback's return value
+ */
+async function withTransaction(callback) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /**
@@ -133,4 +164,4 @@ async function getClient() {
   return pool.connect();
 }
 
-module.exports = { pool, migrate, query, getClient };
+module.exports = { pool, migrate, query, withTransaction, getClient };

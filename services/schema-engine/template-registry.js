@@ -517,6 +517,126 @@ const TEMPLATES = {
     ],
   },
 
+  // ═════════════════════════════════════════════════════════════════
+  // Video Recipe — pipeline config สำหรับ TikTok UGC Studio
+  // ═════════════════════════════════════════════════════════════════
+  video_recipe: {
+    name: 'Video Recipe',
+    slug: 'video_recipe',
+    description: 'Pipeline recipe config — TikTok UGC Studio, video generation settings, voice, scenes',
+    config: {
+      icon: '🎬',
+      color: '#F59E0B',
+      defaultSort: 'name',
+      enableSearch: true,
+      searchFields: ['name', 'description', 'language'],
+    },
+    fields: [
+      {
+        name: 'name',
+        type: 'string',
+        label: 'Recipe name',
+        required: true,
+        unique: true,
+        placeholder: 'tus_novoice_15s',
+      },
+      {
+        name: 'description',
+        type: 'text',
+        label: 'คำอธิบาย',
+        required: false,
+      },
+      {
+        name: 'version',
+        type: 'string',
+        label: 'Version',
+        default: '1.0',
+        required: false,
+      },
+      {
+        name: 'total_duration',
+        type: 'number',
+        label: 'ความยาววิดีโอ (วินาที)',
+        required: true,
+        min: 1,
+        max: 120,
+        default: 15,
+      },
+      {
+        name: 'language',
+        type: 'select',
+        label: 'ภาษา',
+        options: ['th', 'en', 'zh', 'jp'],
+        default: 'th',
+      },
+      {
+        name: 'default_style',
+        type: 'string',
+        label: 'Default UGC style',
+        required: false,
+        placeholder: 'holding',
+      },
+    ],
+    seedData: [
+      // ── tus_novoice_15s — No voiceover, BGM only ──
+      {
+        name: 'tus_novoice_15s',
+        description: 'TikTok UGC — 15s, no voiceover, 2 parts video concat, BGM only',
+        version: '1.0',
+        total_duration: 15,
+        language: 'th',
+        default_style: 'holding',
+        config: {
+          video_model: 'wan2.7',
+          video_count: 2,
+          voice_tone: 'friendly, authentic, enthusiastic',
+          target_audience: 'Thai TikTok users interested in the product category',
+          image_generation: {
+            model: 'nano-banana',
+            aspect_ratio: '9:16',
+            style: 'realistic, authentic, Thai aesthetic',
+          },
+          video_generation: {
+            model: 'wan2.7',
+            duration: 15,
+            async: true,
+            videos_per_clip: 2,
+          },
+        },
+      },
+      // ── tus_15s — Standard 15s with voiceover ──
+      {
+        name: 'tus_15s',
+        description: 'TikTok UGC — 15 seconds, 2 parts video, with voiceover + BGM',
+        version: '3.0',
+        total_duration: 15,
+        language: 'th',
+        default_style: 'holding',
+        config: {
+          video_model: 'wan2.7',
+          video_count: 2,
+          voice_tone: 'friendly, authentic, enthusiastic',
+          target_audience: 'Thai TikTok users interested in the product category',
+          image_generation: {
+            model: 'nano-banana',
+            aspect_ratio: '9:16',
+            style: 'realistic, authentic, Thai aesthetic',
+          },
+          video_generation: {
+            model: 'wan2.7',
+            duration: 15,
+            async: true,
+            videos_per_clip: 2,
+          },
+          tts: {
+            voice: 'Aoede',
+            language: 'th',
+          },
+        },
+      },
+    ],
+  },
+
 };
 
 // ── Template Operations ─────────────────────────────────────────────
@@ -547,6 +667,11 @@ function getTemplate(slug) {
 
 /**
  * Install a template: creates a real schema from the template definition.
+ *
+ * Wrapped in a PostgreSQL transaction:
+ *   - Schema INSERT + seed INSERTs commit or rollback together
+ *   - If any seed fails, the schema is NOT created (no partial state)
+ *
  * @param {string} slug  — template slug
  * @param {object} [overrides]  — optional { name, slug, fields_append, config_override }
  * @returns {Promise<object>}  — the created schema
@@ -557,7 +682,9 @@ async function installTemplate(slug, overrides = {}) {
     throw Object.assign(new Error(`Template "${slug}" not found`), { status: 404 });
   }
 
+  const db = require('./db');
   const schemaMgr = require('./schema-manager');
+  const dataMgr = require('./data-manager');
 
   const schemaData = {
     name: overrides.name || template.name,
@@ -574,7 +701,22 @@ async function installTemplate(slug, overrides = {}) {
     template: slug,
   };
 
-  return await schemaMgr.createSchema(schemaData);
+  // Run schema creation + seed data in a single transaction.
+  // If schema slug conflicts (409) or any seed fails, everything rolls back.
+  return await db.withTransaction(async (client) => {
+    // Create the schema using the transactional client
+    const schema = await schemaMgr.createSchema(schemaData, client);
+
+    // Seed data if defined in template (skip if overrides.seed === false)
+    if (template.seedData && overrides.seed !== false) {
+      for (const seedRow of template.seedData) {
+        await dataMgr.createRecord(schema.slug, seedRow, client);
+      }
+    }
+
+    // Re-fetch to return the full schema row (seed INSERTs didn't modify the schema)
+    return await schemaMgr.getSchema(schema.slug);
+  });
 }
 
 module.exports = {
