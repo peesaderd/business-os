@@ -2,5 +2,5 @@
   "name": "bos-gateway",
   "script": "server.js",
   "cwd": "/home/openhands/.openclaw/workspace/business-os/gateway",
-  "env": { "PORT": "8080", "JWT_SECRET": "bos-dev-secret-2026" }
+  "env": { "PORT": "8088", "JWT_SECRET": "bos-dev-secret-2026" }
 }
