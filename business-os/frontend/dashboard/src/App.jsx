@@ -41,7 +41,7 @@ function AppInit() {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/">
+    <BrowserRouter basename="/dashboard">
       <AppInit />
       <Routes>
         {/* Public */}
