@@ -530,11 +530,23 @@
       <div id="variantList" class="grid-2"></div>
     </div>
 
-    <!-- Step 5: Artwork -->
+    <!-- Step 5: Artwork + AI Design -->
     <div class="card hidden" id="step-artwork">
-      <h2>🎭 อัปโหลดอาร์ตเวิร์ก</h2>
-      <div class="form-group">
-        <label>URL รูปภาพ</label>
+      <h2>🎭 ออกแบบลวดลาย</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">AI ออกแบบลายให้อัตโนมัติ หรือใส่ URL รูปของคุณเอง</p>
+      <div id="designPreview" class="preview-area" style="min-height:280px;margin-bottom:12px;">
+        <div class="preview-placeholder" id="designPlaceholder">
+          <span class="emoji">🎨</span>
+          <p>กำลังสร้างลายด้วย AI...</p>
+        </div>
+        <img id="designImage" src="" alt="Design Preview" style="display:none;width:100%;max-width:400px;margin:0 auto;border:var(--pixel-size) solid var(--border-color);border-radius:8px;" />
+      </div>
+      <div class="grid-2" style="margin-bottom:12px;">
+        <button class="btn btn-primary" onclick="generateDesign()" id="genDesignBtn">🎨 สร้างลายใหม่</button>
+        <button class="btn btn-secondary" onclick="toggleUrlInput()">🔗 ใช้ URL ของฉัน</button>
+      </div>
+      <div class="form-group" id="urlInputGroup" style="display:none;">
+        <label>URL รูปภาพ (ไม่บังคับ)</label>
         <input type="text" id="artworkUrl" placeholder="https://example.com/design.png" />
       </div>
       <button class="btn btn-primary btn-block" onclick="generateMockup()">✨ สร้าง Mockup</button>
@@ -764,17 +776,75 @@
     function selectVariant(id) {
       state.variant = state.variants.find(v => String(v.id) === String(id));
       toast('✅ เลือก: ' + state.variant.name, 'success');
+      state.designUrl = '';
+      state.artworkUrl = '';
       showStep('artwork');
-      setStatus('🎭 ใส่อาร์ตเวิร์กเพื่อสร้าง Mockup', 'idle');
+      setStatus('🎨 กำลังสร้างลายด้วย AI...', 'loading');
       setProgress(66);
+      // Auto-generate AI design
+      generateDesign();
+    }
+
+    // ── AI Design Generation ──
+    async function generateDesign() {
+      const btn = document.getElementById('genDesignBtn');
+      const placeholder = document.getElementById('designPlaceholder');
+      const imgEl = document.getElementById('designImage');
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังสร้าง...';
+      placeholder.style.display = 'flex';
+      imgEl.style.display = 'none';
+      setStatus('🎨 กำลังสร้างลายด้วย AI...', 'loading');
+
+      try {
+        const r = await fetch('/api/pod/generate-design', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_name: state.product?.name || 'Design',
+            style: 'modern minimalist'
+          })
+        });
+        const data = await r.json();
+        const imageUrl = data.result?.image_url;
+        if (!imageUrl) throw new Error('No image returned');
+
+        state.designUrl = imageUrl;
+        imgEl.src = imageUrl;
+        imgEl.onload = function() {
+          placeholder.style.display = 'none';
+          imgEl.style.display = 'block';
+          btn.textContent = '🎨 สร้างลายใหม่';
+          btn.disabled = false;
+          setStatus('🎭 ลายพร้อมแล้ว! กดสร้าง Mockup ได้เลย', 'idle');
+        };
+        toast('✅ AI สร้างลายเสร็จแล้ว!', 'success');
+      } catch (e) {
+        toast('❌ สร้างลายไม่สำเร็จ: ' + e.message, 'error');
+        setStatus('🔴 สร้างลายไม่สำเร็จ', 'error');
+        btn.textContent = '🎨 สร้างลายใหม่';
+        btn.disabled = false;
+        placeholder.innerHTML = '<span class="emoji">❌</span><p>สร้างลายไม่สำเร็จ ลองอีกครั้ง</p>';
+      }
+    }
+
+    // ── Toggle URL input ──
+    function toggleUrlInput() {
+      const group = document.getElementById('urlInputGroup');
+      const visible = group.style.display !== 'block';
+      group.style.display = visible ? 'block' : 'none';
+      if (visible) document.getElementById('artworkUrl').focus();
     }
 
     // ── Generate Mockup ──
     async function generateMockup() {
-      const url = document.getElementById('artworkUrl').value.trim();
+      const manualUrl = document.getElementById('artworkUrl').value.trim();
+      const designUrl = state.designUrl || '';
+
+      // Use manual URL if provided, else AI-generated design
+      const url = manualUrl || designUrl;
       if (!url) {
-        toast('⚠️ กรุณาใส่ URL รูปอาร์ตเวิร์ก', 'error');
-        setStatus('🔴 ใส่ URL อาร์ตเวิร์กก่อน', 'error');
+        toast('⚠️ กำลังสร้างลาย... รอสักครู่', 'error');
         return;
       }
 

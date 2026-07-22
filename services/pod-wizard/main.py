@@ -2,11 +2,13 @@
 POD Wizard — Backend API
 Proxies Printful API (avoids CORS) + serves frontend
 """
-import os, json, time
+import os, json, time, uuid
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 import httpx
 import logging
+import requests as sync_requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("pod-wizard")
@@ -211,6 +213,121 @@ async def get_mockup_status(task_key: str):
         if r.status_code != 200:
             raise HTTPException(r.status_code, r.text[:200])
         return r.json()
+
+# ─── AI Design Generation ───
+
+DESIGNS_DIR = "/var/www/podwizard/designs"
+
+@app.post("/api/pod/generate-design")
+async def generate_design(body: dict):
+    """Generate a product design using PIL (fast, no external API)"""
+    from PIL import Image, ImageDraw, ImageFont
+    import math, random
+
+    product_name = body.get("product_name", "Custom Design")
+    style = body.get("style", "modern")
+
+    os.makedirs(DESIGNS_DIR, exist_ok=True)
+    filename = f"design_{uuid.uuid4().hex[:12]}.png"
+    local_path = os.path.join(DESIGNS_DIR, filename)
+
+    size = 1024
+    img = Image.new("RGBA", (size, size), (255, 255, 255, 255))
+    draw = ImageDraw.Draw(img)
+
+    # ── Generate geometric pattern based on product name hash ──
+    seed = hash(product_name + style)
+    random.seed(seed)
+    rng = random.Random(seed)
+
+    # Background: subtle pattern
+    bg_color = (245, 245, 250, 255)
+    draw.rectangle([0, 0, size, size], fill=bg_color)
+
+    # Primary color from hash
+    hue = abs(seed) % 360
+    primary = _hsv_to_rgb(hue, 0.7, 0.9)
+    secondary = _hsv_to_rgb((hue + 40) % 360, 0.5, 0.7)
+    accent = _hsv_to_rgb((hue + 180) % 360, 0.8, 0.8)
+
+    # Draw geometric shapes (circles, lines, triangles)
+    cx, cy = size // 2, size // 2
+    r = size * 0.38
+
+    # Outer circle
+    for i in range(3):
+        offset = i * 15
+        draw.ellipse([cx - r + offset, cy - r + offset, cx + r - offset, cy + r - offset],
+                     outline=primary if i == 0 else secondary, width=8 - i * 2)
+
+    # Inner geometric pattern
+    for i in range(6):
+        angle = i * 60 + abs(seed) % 20
+        rad = math.radians(angle)
+        x1 = cx + int(r * 0.6 * math.cos(rad))
+        y1 = cy + int(r * 0.6 * math.sin(rad))
+        x2 = cx + int(r * 0.9 * math.cos(rad + 0.3))
+        y2 = cy + int(r * 0.9 * math.sin(rad + 0.3))
+        draw.line([(x1, y1), (x2, y2)], fill=accent, width=6)
+
+    # Dots
+    for _ in range(12):
+        angle = rng.uniform(0, 360)
+        dist = rng.uniform(r * 0.2, r * 0.85)
+        rad = math.radians(angle)
+        dx = cx + int(dist * math.cos(rad))
+        dy = cy + int(dist * math.sin(rad))
+        dot_r = rng.randint(4, 12)
+        draw.ellipse([dx - dot_r, dy - dot_r, dx + dot_r, dy + dot_r],
+                     fill=secondary if rng.random() > 0.5 else accent)
+
+    # Center circle (empty)
+    cr = int(r * 0.25)
+    draw.ellipse([cx - cr, cy - cr, cx + cr, cy + cr],
+                 outline=primary, width=6, fill=(255, 255, 255, 200))
+
+    # Initial letter watermark
+    letter = product_name[0].upper() if product_name else "P"
+    try:
+        font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 180)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
+    except Exception:
+        font_large = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+
+    # Letter in center
+    bbox = draw.textbbox((0, 0), letter, font=font_large)
+    tw = bbox[2] - bbox[0]
+    th = bbox[3] - bbox[1]
+    draw.text((cx - tw // 2, cy - th // 2), letter, fill=primary, font=font_large)
+
+    # Style text bottom
+    style_text = style.upper() if style else ""
+    if style_text:
+        bbox2 = draw.textbbox((0, 0), style_text, font=font_small)
+        sw = bbox2[2] - bbox2[0]
+        draw.text((cx - sw // 2, size - 80), style_text, fill=(180, 180, 190, 255), font=font_small)
+
+    img.save(local_path, "PNG")
+    public_url = f"https://podwizard.m2igen.com/designs/{filename}"
+    return {"result": {"image_url": public_url, "prompt": f"{product_name} - {style}"}}
+
+
+def _hsv_to_rgb(h, s, v):
+    """Convert HSV to RGB tuple"""
+    h = h / 60.0
+    i = int(h)
+    f = h - i
+    p = v * (1.0 - s)
+    q = v * (1.0 - s * f)
+    t = v * (1.0 - s * (1.0 - f))
+    if i == 0: r, g, b = v, t, p
+    elif i == 1: r, g, b = q, v, p
+    elif i == 2: r, g, b = p, v, t
+    elif i == 3: r, g, b = p, q, v
+    elif i == 4: r, g, b = t, p, v
+    else: r, g, b = v, p, q
+    return (int(r * 255), int(g * 255), int(b * 255))
 
 @app.get("/api/pod/health")
 async def health():

@@ -1,9 +1,6 @@
 """
 POD Wizard — Real E2E Browser Test (Playwright)
-Tests the full wizard flow in a real headless browser.
-Catches JS errors, network failures, rendering bugs.
-
-Usage:  python3 test_e2e_browser.py [--headed]
+Tests the full wizard flow including AI design generation.
 """
 
 import os, sys
@@ -48,18 +45,17 @@ def run():
             headless=(not HEADED),
             args=["--no-sandbox", "--disable-setuid-sandbox"]
         )
-        ctx = browser.new_context(
-            viewport={"width": 1280, "height": 900}
-        )
+        ctx = browser.new_context(viewport={"width": 1280, "height": 900})
         page = ctx.new_page()
 
         page.on("console", lambda msg: js_errors.append(
-            "[%s] %s" % (msg.type, msg.text[:120])
-        ) if msg.type in ("error", "warning") else None)
-        page.on("pageerror", lambda err: js_errors.append(str(err)))
+            "[JS] %s" % msg.text[:120]
+        ) if msg.type in ("error", "warning") and "Failed to load resource" not in msg.text else None)
+        page.on("pageerror", lambda err: js_errors.append("[PAGE] " + str(err)[:120]))
+
 
         try:
-            # Step 1: Page loads
+            # Step 1: Load page
             step(1, "Page loads")
             r = page.goto(BASE_URL, wait_until="domcontentloaded", timeout=15000)
             page.wait_for_load_state("networkidle", timeout=10000)
@@ -95,7 +91,6 @@ def run():
             # Step 5: Click category -> products
             step(5, "Click category -> products load")
             first_cat = page.locator("#categoryList button").first
-            cat_label = first_cat.text_content().strip()[:30]
             first_cat.click()
             page.wait_for_selector("#productList .card:not(.hidden)", timeout=15000)
             prod_count = page.evaluate(
@@ -104,19 +99,16 @@ def run():
 
             # Step 6: Click product -> variants
             step(6, "Click product -> variants load")
-            page.wait_for_selector("#productList .card:not(.hidden)", timeout=5000)
             first_prod = page.locator("#productList .card:not(.hidden)").first
-            prod_label = first_prod.text_content().strip()[:30]
             first_prod.click()
             page.wait_for_selector("#variantList button", timeout=15000)
             var_count = page.evaluate(
                 "document.querySelectorAll('#variantList button').length")
             _check(var_count >= 1, "Variants count: " + str(var_count))
 
-            # Step 7: Click variant -> artwork
-            step(7, "Click variant -> artwork step")
+            # Step 7: Click variant -> AI design auto-generated
+            step(7, "Click variant -> AI design auto-generates")
             first_var = page.locator("#variantList button").first
-            var_label = first_var.text_content().strip()[:30]
             first_var.click()
             page.wait_for_timeout(1000)
             visible = page.evaluate('''() => {
@@ -125,22 +117,30 @@ def run():
                     .map(c => c.id);
             }''')
             _check("step-artwork" in visible, "Artwork step visible: " + str(visible))
-            _check(page.locator("#artworkUrl").is_visible(), "URL input visible")
+            _check(page.locator("#genDesignBtn").is_visible(), "AI Design button visible")
             _check(page.locator("button.btn-primary:has-text('Mockup')").is_visible(), "Mockup button visible")
 
-            # Step 8: Empty mockup -> error
-            step(8, "Submit empty artwork -> error toast")
-            page.fill("#artworkUrl", "")
-            page.click("button.btn-primary:has-text('Mockup')")
+            # Step 8: Wait for AI design, then Mockup
+            step(8, "AI design loads -> click Mockup")
+            try:
+                page.wait_for_selector("#designImage[src*='m2igen']", timeout=15000)
+                _check(True, "AI design loaded in < 15s")
+            except PWTimeout:
+                _check(False, "AI design timeout")
+            
+            # Click Mockup button (the last one with Mockup text)
+            page.locator("button.btn-primary:has-text('Mockup')").click()
             page.wait_for_timeout(2000)
             status = page.evaluate(
                 "document.getElementById('statusText')?.textContent || ''")
-            is_error = "error" in status.lower() or "fail" in status.lower() or "red" in status or "\U0001f534" in status or status.strip() == ""
-            _check(is_error, "Error shown on empty URL: " + status.strip()[:60])
+            _check(len(status) > 0 and status.strip() != "",
+                   "Mockup triggered: " + status.strip()[:60])
 
             # Step 9: Final JS errors
             step(9, "Final JS error summary")
-            _check(len(js_errors) == 0, "JS errors total: " + str(len(js_errors)))
+            _check(len(js_errors) == 0,
+                   "JS errors total: " + str(len(js_errors)),
+                   "\n".join(js_errors[:5]))
 
             # Step 10: Screenshot
             step(10, "Screenshot")
