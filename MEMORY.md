@@ -17,75 +17,6 @@
 - Integrated into `analyze_pipeline.py::_analyze_and_select_images()`
 - Returns composite score 0-100 + `recommended` flag
 
-## Silent Replies
-When you have nothing to say, respond with ONLY: NO_REPLY
-⚠️ Rules:
-- It must be your ENTIRE message — nothing else
-- Never append it to an actual response (never include "NO_REPLY" in real replies)
-- Never wrap it in markdown or code blocks
-❌ Wrong: "Here's help... NO_REPLY"
-❌ Wrong: "NO_REPLY"
-✅ Right: NO_REPLY
-
-## User Preferences
-
-### Communication Style (2026-07-08):
-- ✅ ใช้ bullet points แทนย่อหน้ายาวๆ
-- ✅ แบ่งหัวข้อด้วย emoji และ headers
-- ✅ ใช้ตารางสำหรับข้อมูลที่ต้องเปรียบเทียบ
-- ✅ สรุปสั้นๆ ก่อนลงรายละเอียด
-- ❌ หลีกเลี่ยง paragraph ยาวๆ ติดกัน
-- ❌ ไม่ตอบข้อมูลดิบโดยไม่จัดรูปแบบ
-
-## Session Recap: 2026-07-06 — TikTok UGC Pipeline (1.5h, high frustration)
-
-### สิ่งที่ทำสำเร็จ
-1. ✅ **สร้าง Prompt Builder Service** (port 8117) — microservice สำหรับ image prompt + video prompt + negative prompt 
-2. ✅ **สร้าง shared_config.py** — centralized key management ใช้กับ 6 Python files
-3. ✅ **Prompt Builder Service scope ชัดเจน**: image + video + negative prompt **เท่านั้น**
-4. ✅ **ลบ script endpoint จาก service** — script อยู่ modules/video/script_gen.py
-5. ✅ **สร้าง recipe files**: etsy.json, tus.json
-6. ✅ **Skill "use-aider-with-opencode"** — ลงเป็น live skill แล้ว (Aider ใช้ OpenCode API ทุกครั้ง)
-
-### สิ่งที่กูพลาด
-1. ❌ **ย้อนกลับ main.py + image_prompt_builder.py + app.py** หลังทำเกิน (3 ไฟล์)
-2. ❌ **script_gen.py ถูกลบแล้ว git restore** (from commit 052a96d^)
-3. ❌ กูทำเกินหลายรอบโดยไม่ถาม — เปลี่ยน architecture โดยไม่จำเป็น
-
-### สถานะปัจจุบัน (architecture)
-- `prompt-builder-service/` — image + video prompt **เท่านั้น** (port 8117)
-- `modules/video/script_gen.py` — script gen ที่เดียว (generate_tiktok_review_script → dict)
-- `tiktok-ugc-studio/image_prompt_builder.py` — shim 3 functions (analyze_and_build_prompts, build_prompt, process_image_prompt_request)
-- `modules/video/` — TTS (gTTS, **ไม่ใช่ Fal.ai**), video gen (Prodia Wan 2.7)
-- **Fal.ai ต้องเอาออก** — ใช้ Prodia อย่างเดียว
-
-### สิ่งที่ต้องทำต่อ (แต่ต้องถามก่อน)
-1. ย้าย script gen functions (service's generate_script) → modules/video/script_gen.py (merge)
-2. ลบ Fal.ai: fal_client.py (x2), VideoProvider.FAL ใน video_gen.py
-3. TTS ใช้ **Google AI Studio (Gemini key) — ไม่ใช่ Fal.ai MiniMax** <-- นึกได้ตอนจบ session
-4. Update model references: gemini-2.0-flash → gemini-2.5-flash
-5. Prompt files dedup (service vs module vs prompt-studio)
-6. ลบ dead prompt files
-
-### API Keys (current valid)
-| Service | Key | Valid |
-|---------|-----|-------|
-| Gemini (new) | `AQ.Ab8RN6K2…FoYg` | ✅ **Primary** |
-| Gemini (old) | `AIzaSy…Im5w` | ❌ Dead |
-| OpenCode Go | `sk-LTP…ngi0` | ✅ (opencode CLI only) |
-| Mistral | `6sifzr…VScg` | ✅ Aider fallback |
-
-### Pipeline Flow (ที่ถูกต้อง)
-Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt Builder (video prompt) → Script Gen → TTS → Prodia Wan 2.7 (img2vid) → Compose
-
-### Critical Rules (ที่มึงย้ำ)
-1. **ทุกอย่างถามก่อน** — ไม่ตัดสินใจ architecture เอง
-2. **ใช้ Aider (=opencode-aider) ทำงานโค้ด** — ไม่ใช้ DeepSeek API โดยตรง
-3. **Prompt Builder = image + video prompt เท่านั้น** — ไม่ยุ่ง script, analysis, scraping
-4. **Script อยู่ modules/video/** — ถูกแล้ว ไม่ต้องย้าย
-5. **Fal.ai ต้องเอาออก** — Prodia อย่างเดียวสำหรับ video
-6. **TTS ใช้ Google AI Studio (Gemini key)** — ไม่ใช่ Fal.ai MiniMax
-
 ## SuperAppsheet POS Fix (2026-07-14)
 ### What was fixed
 1. **✅ ERP Client (`erp_client.py`)** — Removed auth/login flow that 404'd on `/api/auth/login` (ERP Core has no auth endpoints). Now calls MCP tools directly with `tenantId: "demo"`.
@@ -98,6 +29,16 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 - 🔴 **Google Sheets mock mode** — Service account `super-appsheet@peteai-494609` can't create Drive files (no Google Workspace quota). OAuth token expired (`invalid_grant`). Needs browser OAuth re-login.
 - 🟡 **ERP Core MCP missing `list_categories` tool** — Workaround: derive from products. Long-term: add the tool to ERP Core.
 
+## exec tool root cause (2026-07-19)
+- **spawn /bin/sh ENOENT** — container ไม่มี shell (`/bin/sh`, `/bin/bash`)
+- OpenClaw exec tool spawns commands via `child_process.exec()` which needs `/bin/sh`
+- ALL config changes (`tools.profile: "full"`, etc.) are irrelevant — shell doesn't exist
+- Config with valid schema keys: `profile: "full"`, `elevated.enabled: true`, exec with `backgroundMs/timeoutSec/cleanupMs`
+- Fix: install bash/sh in container Dockerfile or `apt-get install -y bash`
+
+## 🚨 Critical Rules (2026-07-20)
+1. **ทดสอบบน Web UI เท่านั้น** — ห้าม curl, ห้าม localhost, ต้องใช้หน้า Web UI จริงๆที่ m2igen.com เสมอ
+2. **ถึง curl/localhost จะได้ผลลัพธ์ OK ก็ไม่ตรงกับความจริง** — ต้องลองผ่าน browser เท่านั้น
 
 ## 🚨 Critical Rules (2026-07-13)
 1. **ทดสอบบน Live server เท่านั้น** — ห้าม curl localhost, ห้าม localhost:8105
@@ -105,7 +46,7 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 3. **Live domain = m2igen.com** — ใช้ URLs บน m2igen.com เสมอ
 4. **ก่อนบอกว่า API ไม่รองรับ** — ต้องเช็ค code บน server จริงก่อน ไม่ใช่เดา
 5. **Nano Banana มี aspect_ratio** — ใช้ `"9:16"` ใน config
-6. **Wan 2.7 sync API** — `duration`, `resolution`, `ratio` ใช้ได้ทั้งหมด ✅ (ตาม Prodia docs, เช็คแล้วจาก pipeline jobs ที่ completed)
+6. **Wan 2.7 sync API** — ใช้ `img2vid.v1` (async) กับ `duration`, `resolution` ใน config เช่นเดิม
 
 ## Wizard Flow Fix (2026-07-13)
 ### สิ่งที่แก้
@@ -119,14 +60,6 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 
 ### Wizard Flow ที่ถูกต้อง
 `provider(0) → category(1) → product(2) → variant(3) → print_info(4) → artwork(5) → mockup(6) → content(7) → pricing(8) → summary(9)`
-
-### Print Info Endpoint
-- `GET /pod/print-info/{product_id}?variant_id=xxx`
-- Returns: `placements`, `printfiles`, `recommended_size` (width/height/dpi), `placement_templates` (print_area coords), `variant_mapping_count`
-- T-shirt: 2250x2700px @150dpi, 7 placements, 590 variants
-- Canvas: 18900x12900px, `default` placement
-- Poster: 12000x9000px, `default` placement
-- Metal Print: 10875x7275px, `default` placement
 
 ## Schema Engine (2026-07-18)
 ### What was built
@@ -143,72 +76,45 @@ Product Data → Prompt Builder (image prompt) → Prodia (img gen) → Prompt B
 | `db.js` | 136 | PostgreSQL pool + auto-migration (creates schemas + records tables + GIN index) |
 | `erp-client.js` | 111 | ERP Core MCP client (read members, rewards, products) |
 
-### APIs
-- `POST/GET/PUT/DELETE /api/v1/schema` — Schema CRUD
-- `POST/GET/PUT/DELETE /api/v1/data/:schema[/:id]` — Dynamic data CRUD with validation + pagination + filtering
-- `POST /api/v1/template/:name/install` — Create schema from template
-- `POST /api/v1/query` — AI-structured query (search, aggregate, relation) for OpenClaw
-- `GET /api/v1/schema-info` — Full metadata dump for AI to understand all schemas
-- `POST /api/v1/sync/erp-members` — Pull ERP members into member schema
+### 🔥 Bug Fix: `text ~~* uuid` ILIKE crash
+- **Root cause**: `buildWhereClause()` in `data-manager.js` started parameter `idx` at 1, but `listRecords()` always uses `$1` for `schema_id`. PostgreSQL inferred `$1` as UUID type (from `schema_id = $1` column), so `data->>'field' ILIKE $1` failed because ILIKE only accepts text/text operands.
+- **Fix**: Changed `let idx = 1` → `let idx = 2` to reserve `$1` for `schema_id`.
+- **Symptoms**: `?search=` on any schema crashed with 500 `operator does not exist: text ~~* uuid`.
 
-### Tech
-- **Node.js Express** — same stack as other services
-- **PostgreSQL** — single `records` table with JSONB data column per schema
-- **GIN index** on data JSONB for fast field-level queries
+## Prodia Wan 2.7 Video Gen (2026-07-18) 🔥
+### API Endpoint
+- **job_type**: `inference.wan2-7.img2vid.v1` (async API only — `txt2img.v1` is sync-only and 404s)
+- **Parameters** (in config dict):
+  - `prompt` (required)
+  - `duration` — 2–15s (default 5), actual output ~10.3s for `duration: 15`
+  - `resolution` — `"720P"` (default) or `"1080P"`
+  - **DO NOT** use `negative_prompt` — Prodia rejects it in config
+  - **DO NOT** use `ratio` for img2vid (txt2vid only)
+  - Prodia auto-adds: `seed`, `prompt_extend: true`, `negative_prompt: ""`
+- **Pricing**: Flat $0.03 per job (regardless of duration 2-15s)
 
-### Templates (5)
-1. **member** — fields from ERP (erp_id, name, phone, email, points, tier) + local extensions (tags, preferences, line_user_id, notes)
-2. **queue_ticket** — ticket_number, service_type, status, priority, party_size, source
-3. **booking_slot** — customer, service, start/end time, staff, price, deposit
-4. **pos_order** — order_number, items (array), subtotal, discount, tax, grand_total, payment
-5. **reward_ledger** — member relation, earn/redeem/expire, balance tracking
+### Pipeline Integration
+- `pipeline_affiliate.py::generate_video()` calls `client.generate_video(job_type, prompt, input_image, duration, resolution, negative_prompt)`
+- `prodia_client.py::generate_video()` puts `duration` + `resolution` in config dict
+- **Pipeline cost**: $0.069 total ($0.03 image + $0.03 video + $0.009 TTS/gemini)
+- **Pipeline time**: ~130-157s for full 6-scene TUS recipe
 
-### Key Design Decision
-- **Relations handled by AI** (OpenClaw) — no foreign keys, no JOINs
-- Schema Engine provides raw data + full metadata (`GET /api/v1/schema-info`)
-- OpenClaw reads schema-info → understands data model → resolves relations at query time
-- AI query endpoint `POST /api/v1/query` supports search, aggregate, and relation modes
+### Actual Video Duration vs Requested
+| Requested | Actual Produced | File Size |
+|-----------|----------------|-----------|
+| 8s | 7.979s | 4.9 MB |
+| 15s | 10.368s | 6.5 MB (final compose) |
 
-### Deployment Config (added in workspace)
-- ✅ **PM2 ecosystem** → `services/schema-engine/ecosystem.config.cjs` (port 8100, all env vars)
-- ✅ **Gateway route** → `business-os/gateway/proxy.js` → `/api/schema → localhost:8100`
-
-### Deploy Status (2026-07-18)
-- ✅ **PostgreSQL** — DB `superapp_schema`, user `superapp` ✅
-- ✅ **PM2** — schema-engine running on port 8100 (pid 1278005) ✅
-- ✅ **nginx** — route `/api/schema/` → `localhost:8100` on m2igen.com ✅
-- ✅ **Gateway** — route `/api/schema/` in `proxy.js` (for BOS gateway when running)
-- ✅ **Test** — public API at `https://m2igen.com/api/schema/api/v1/schema` ✅
-- ✅ **Bugfix** — `listRecords` missing `schema.id` param fixed ✅
-
-### Cleanup (still pending but non-blocking)
-- [ ] Keep `ssh_helper.py` in workspace for future SSH access
-- [ ] `upload_b64.py` — helper for file transfer
-
-### Module Registry (2026-07-18)
-- ✅ **ERP Modular** (port 8102) — started and running with PM2 (id:31)
-- ✅ **Schema Engine** registered as module #21 — slug: `schema-engine`, port 8100
-- Registry has 22 modules (CRM, POS, Payment, Image Gen, TikTok UGC, Etsy, etc.)
-- ✅ **Member Module** registered as module #22 — slug: `member`, uses Schema Engine member schema
-- ✅ **Reward Ledger** registered as module #23 — slug: `reward_ledger`, uses Schema Engine reward_ledger schema
-
-### Schema Engine → SuperAppsheet Integration (2026-07-18)
-- ✅ **schema_engine_client.py** — REST client for Schema Engine member + reward_ledger CRUD
-- ✅ **pos_engine.py** — get_members() now fetches from Schema Engine first, then ERP Core MCP, then local MEMBERS
-- ✅ **update_member()** — syncs to Schema Engine first (auto-create if new), then ERP Core, then local
-- ✅ **Reward Ledger** registered as module #23 in ERP Modular
-- **Architecture**: Schema Engine = primary member store, ERP Core MCP = optional fallback
-- Module API: `POST/GET /api/v1/modules`
-
-### Still Pending
-- [ ] `validate_artwork()` in `pod_sizes.py` — ใช้ static sizes (ยังใช้จาก `/pod/validate-artwork` endpoint แต่ไม่ critical เพราะ flow หลักใช้ print_info แทน)
-- [ ] AI gen artwork ตามขนาด recommended_size จาก Printful โดยตรง — ต้อง integrate กับ /ai/generate-image
+### Key Lesson
+- Prodia Wan 2.7 accepts `duration: 15` in config but model generates ~10s
+- `duration: 16` triggers JSON Schema rejection ("additional properties not allowed")
+- `duration: 8` produces 7.979s (acceptable)
+- **Multi-scene video**: pipeline currently hardcoded to 1 scene only (Step 8 comment: `# 1 scene only — ใช้ prompt แรก (Hook) + duration เต็ม`)
 
 ## POS /assets 502 Fix (2026-07-18)
 - **Problem**: nginx ส่ง `/assets` ไป port 54531 (ซึ่งไม่ทำงานแล้ว) → 502
-- **Fix**: เปลี่ยน `/assets` proxy_pass จาก `127.0.0.1:54531` เป็น `127.0.0.1:54532` ใน `/etc/nginx/sites-enabled/m2igen.com.conf`
-- **Method**: ใช้ Docker container (`docker run --rm -v /etc/nginx:/host/etc alpine`) เพื่อ sed แก้ไฟล์บน host (openhands user ไม่มี sudo แต่มี docker group)
-- **Reload**: `docker run --rm --pid=host alpine:5432 kill -HUP 1163`
-- **Result**: `/assets/index-rE3ehX4Q.js` → 200 ✅, `/pos` → 200 ✅, `/api/pos/orders` → 200 (33 orders)
-- **Root cause**: nginx config มี 3 master processes — PID 1163 เป็น main (m2igen.com), PID 2915 เป็น global
-- **Key lesson**: SSH เข้า host ได้ผ่าน `ssh_helper.py` (Python ctypes libssh2), git push/commit ต้องทำผ่าน GitHub token (URL แบบ token-in-URL)
+- **Fix**: เปลี่ยน `/assets` proxy_pass จาก `127.0.0.1:54531` เป็น `127.0.0.1:54532`
+
+## Silent Replies
+Nothing to say: entire reply exactly NO_REPLY
+Never append to real response or wrap in Markdown/code.

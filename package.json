@@ -22,7 +22,9 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "playwright": "^1.61.1",
+    "playwright-extra": "^4.3.6",
     "prodia": "^1.6.0",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "ssh2": "^1.17.0",
     "uuid": "^10.0.0"
   },

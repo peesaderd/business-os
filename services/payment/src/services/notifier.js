@@ -1,36 +1,29 @@
 /**
  * Notifier Service — แจ้งเตือนเมื่อรับเงิน
  * ✅ LINE Notify
- * ✅ Console/Log (ใน-app)
+ * ✅ Telegram
+ * ✅ Console/Log
  * ✅ Webhook
- * ✅ (เตรียม) Telegram
  */
-const http = require('http');
 const https = require('https');
 const db = require('../db');
 
-// ── LINE Notify Token (ตั้งค่าใน .env) ──
+// ── Token จาก .env ──
 const LINE_TOKEN = process.env.LINE_NOTIFY_TOKEN || null;
-
-// ── Telegram Bot Token (ตั้งค่าใน .env) ──
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || null;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || null;
 
 module.exports = {
   /**
    * ส่งการแจ้งเตือน
-   * @param {Object} opts
-   * @param {'all'|'line'|'telegram'|'console'} opts.channel
-   * @param {string} opts.title
-   * @param {string} opts.message
-   * @param {Object} opts.metadata
+   * @param {'all'|'line'|'telegram'|'console'} channel
    */
   async send({ channel = 'all', title, message, metadata = {} }) {
     const results = {};
 
     // ── Log to DB ──
     try {
-      db.addLog({ 
+      db.addLog({
         customerId: metadata?.customerId || 'system',
         level: 'info',
         message: `${title}: ${message}`,
@@ -41,14 +34,14 @@ module.exports = {
       results.db = false;
     }
 
-    // ── Console (in-app) ──
+    // ── Console ──
     console.log(`[notifier] ${title} | ${message}`);
     results.console = true;
 
     // ── LINE Notify ──
     if (LINE_TOKEN && (channel === 'all' || channel === 'line')) {
       try {
-        await this.sendLine({ title, message, metadata });
+        await this.sendLine({ title, message });
         results.line = true;
       } catch (e) {
         console.warn('[notifier] LINE failed:', e.message);
@@ -61,7 +54,7 @@ module.exports = {
     // ── Telegram ──
     if (TELEGRAM_TOKEN && TELEGRAM_CHAT_ID && (channel === 'all' || channel === 'telegram')) {
       try {
-        await this.sendTelegram({ title, message, metadata });
+        await this.sendTelegram({ title, message });
         results.telegram = true;
       } catch (e) {
         console.warn('[notifier] Telegram failed:', e.message);
@@ -77,11 +70,11 @@ module.exports = {
   /**
    * LINE Notify API
    */
-  async sendLine({ title, message, metadata }) {
-    return new Promise((resolve, reject) => {
-      const text = `${title}\n${message}`;
-      const postData = `message=${encodeURIComponent(text)}`;
+  async sendLine({ title, message }) {
+    const text = `${title}\n${message}`;
+    const postData = `message=${encodeURIComponent(text)}`;
 
+    return new Promise((resolve, reject) => {
       const req = https.request({
         hostname: 'notify-api.line.me',
         path: '/api/notify',
@@ -108,16 +101,16 @@ module.exports = {
   /**
    * Telegram Bot API
    */
-  async sendTelegram({ title, message, metadata }) {
+  async sendTelegram({ title, message }) {
     const text = `*${title}*\n${message}`;
-    return new Promise((resolve, reject) => {
-      const postData = JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        parse_mode: 'Markdown',
-      });
+    const postData = JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: 'Markdown',
+    });
 
-      https.request({
+    return new Promise((resolve, reject) => {
+      const req = https.request({
         hostname: 'api.telegram.org',
         path: `/bot${TELEGRAM_TOKEN}/sendMessage`,
         method: 'POST',
@@ -132,19 +125,21 @@ module.exports = {
           try { resolve(JSON.parse(body)); }
           catch (e) { resolve({ raw: body }); }
         });
-      }).end(postData);
+      });
+      req.on('error', reject);
+      req.end(postData);
     });
   },
 
   /**
-   * ตั้งค่า LINE Token
+   * ตั้งค่า LINE Token (runtime)
    */
   setLineToken(token) {
     process.env.LINE_NOTIFY_TOKEN = token;
   },
 
   /**
-   * ตั้งค่า Telegram
+   * ตั้งค่า Telegram (runtime)
    */
   setTelegram(token, chatId) {
     process.env.TELEGRAM_BOT_TOKEN = token;

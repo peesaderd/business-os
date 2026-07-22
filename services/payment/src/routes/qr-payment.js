@@ -15,6 +15,8 @@ const config = require('../config');
 const erpBridge = require('../services/erp-bridge');
 const notifier = require('../services/notifier');
 
+const bankCallbacks = require('../services/bank-callbacks');
+
 const router = express.Router();
 
 // ── Default PromptPay (จาก .env → PROMPTPAY_NUMBER) ──
@@ -271,63 +273,33 @@ router.post('/verify', async (req, res) => {
   }
 });
 
-// ── POST: Bank Webhook Callback (auto-detect เงินเข้า) ──
-// ธนาคารหรือ service ที่ detect เงินเข้าสามารถ POST มาได้
+// ── POST: Bank Callback (Generic — ปรับใช้กับ bank API ของไทยทุกเจ้า) ──
 router.post('/bank-callback', async (req, res) => {
   try {
-    const body = req.body;
-    
-    // รับข้อมูลจาก bank API
-    const { 
-      amount,           // จำนวนเงิน
-      senderRef,        // reference ที่ bank ส่งมา
-      bankRef,          // transaction ref จาก bank
-      senderName,
-      senderAccount,
-      receivedAt,
-    } = body;
-
-    if (!amount || !senderRef) {
-      return res.status(400).json({ error: 'amount and senderRef required' });
-    }
-
-    // ค้นหา pending payment ที่ reference ตรงกัน
-    const payment = db.db.prepare(`
-      SELECT * FROM qr_payments WHERE payment_ref LIKE ? AND status = 'pending'
-      ORDER BY created_at DESC LIMIT 1
-    `).get(`%${senderRef}%`);
-
-    if (!payment) {
-      console.log(`[qr-callback] No matching payment for ref: ${senderRef}`);
-      return res.json({ matched: false, message: 'No matching payment found' });
-    }
-
-    // ✅ Automatically verify
-    // Forward to verify handler
-    const verifyRes = await new Promise((resolve) => {
-      req.body = { paymentId: payment.id, verifyBy: 'bank_callback', bankRef };
-      // สร้าง mock request สำหรับ verify
-      const mockReq = { body: { paymentId: payment.id, verifyBy: 'bank_callback', bankRef } };
-      const mockRes = { json: resolve, status: () => ({ json: resolve }) };
-      
-      // เรียก verify โดยตรง
-      const verify = (req, res) => {
-        const { paymentId, paymentRef, verifyBy, bankRef } = req.body;
-        // simplified verify
-        try {
-          const dbPayment = db.db.prepare('SELECT * FROM qr_payments WHERE id = ?').get(paymentId);
-          if (!dbPayment) return res.json({ error: 'Not found' });
-          db.db.prepare("UPDATE qr_payments SET status='paid', paid_at=datetime('now'), bank_ref=? WHERE id=?").run(bankRef || null, paymentId);
-          notifier.send({ channel: 'all', title: '✅ รับเงินเข้า', message: `💰 ${dbPayment.amount} THB` });
-          res.json({ success: true, matched: true });
-        } catch(e) { res.json({ error: e.message }); }
-      };
-      verify(mockReq, mockRes);
-    });
-
-    res.json({ matched: true, paymentId: payment.id, amount: payment.amount });
+    const result = await bankCallbacks.handleCallback('default', req.body);
+    res.json(result);
   } catch (e) {
     console.error('[qr] Bank callback error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── POST: Bank Callback per Bank (SCB / KBank / BBL) ──
+router.post('/bank-callback/:bank', async (req, res) => {
+  try {
+    const { bank } = req.params;
+    const supported = Object.keys(bankCallbacks.BANKS);
+    if (!supported.includes(bank) && bank !== 'default') {
+      return res.status(400).json({ 
+        error: `Unsupported bank: ${bank}`, 
+        supported,
+        hint: 'Use a supported bank slug or send to /bank-callback (generic)'
+      });
+    }
+    const result = await bankCallbacks.handleCallback(bank, req.body);
+    res.json(result);
+  } catch (e) {
+    console.error(`[qr] Bank callback (${req.params.bank}) error:`, e.message);
     res.status(500).json({ error: e.message });
   }
 });
@@ -380,7 +352,7 @@ router.get('/list', (req, res) => {
   res.json(payments);
 });
 
-// ── POST: Admin Confirm (Manual) ──
+// ── POST: Admin Confirm (Manual — verify by admin) ──
 router.post('/admin-confirm', async (req, res) => {
   const { customerId, customerName, amount, planId, promptpayNumber, adminNote } = req.body;
 
@@ -425,6 +397,16 @@ router.post('/admin-confirm', async (req, res) => {
   });
 
   res.json({ success: true, paymentId, paymentRef, message: `✅ Admin confirmed: ${amount} THB from ${customerName || customerId}` });
+});
+
+// ── GET: Admin Dashboard Stats ──
+router.get('/admin/stats', (req, res) => {
+  res.json(bankCallbacks.getVerificationStats());
+});
+
+// ── GET: Unmatched pending payments (admin review) ──
+router.get('/admin/unmatched', (req, res) => {
+  res.json(bankCallbacks.listUnmatched());
 });
 
 module.exports = router;

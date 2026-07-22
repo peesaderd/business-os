@@ -22,6 +22,12 @@ app.use((req, res, next) => {
   express.json({ limit: '10mb' })(req, res, next);
 });
 
+// ── Static Files (Admin Panel) ──
+app.use('/api/payment/assets', express.static(path.join(__dirname, '..', 'public')));
+app.get('/api/payment/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+});
+
 // ── Routes ──
 app.use('/api/payment/checkout', require('./routes/checkout'));
 app.use('/api/payment/webhook', require('./routes/webhook'));
@@ -39,17 +45,7 @@ app.get('/api/payment/health', (req, res) => {
   });
 });
 
-// ── Admin Dashboard ──
-app.get('/api/payment/admin/stats', (req, res) => {
-  const key = req.headers['x-api-key'];
-  if (!key || key !== config.adminApiKey) {
-    // allow localhost
-    if (req.ip !== '127.0.0.1' && req.ip !== '::1' && !req.ip?.startsWith('::ffff:127.0.0.1')) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-  }
-  res.json(db.getDashboardStats());
-});
+
 
 // ── Async Start ──
 async function start() {

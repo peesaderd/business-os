@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📊 Payment Admin — PromptPay</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    html { font-family: 'Inter', 'Sarabun', sans-serif; }
+    body { background: #f0f2f5; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  </style>
+</head>
+<body class="p-4 md:p-8 text-gray-800">
+  <div id="app" class="max-w-6xl mx-auto">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold">📊 Payment Admin</h1>
+        <p class="text-gray-500 text-sm">PromptPay — ตรวจสอบและยืนยันการรับเงิน</p>
+      </div>
+      <button @click="refresh" class="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm">
+        🔄 รีเฟรช
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-8">
+      <div class="card p-4">
+        <div class="text-sm text-gray-500">⏳ รอตรวจสอบ</div>
+        <div class="text-3xl font-bold mt-1">{{ stats.pendingVerification || 0 }}</div>
+        <div class="text-xs text-gray-400 mt-1">QR ที่สร้างแต่ยังไม่จ่าย</div>
+      </div>
+      <div class="card p-4">
+        <div class="text-sm text-gray-500">✅ วันนี้</div>
+        <div class="text-3xl font-bold mt-1">{{ stats.today?.count || 0 }}</div>
+        <div class="text-xs text-gray-400 mt-1">{{ (stats.today?.total || 0).toLocaleString() }} THB</div>
+      </div>
+      <div class="card p-4">
+        <div class="text-sm text-gray-500">📅 เดือนนี้</div>
+        <div class="text-3xl font-bold mt-1">{{ stats.thisMonth?.count || 0 }}</div>
+        <div class="text-xs text-gray-400 mt-1">{{ (stats.thisMonth?.total || 0).toLocaleString() }} THB</div>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex gap-2 mb-6">
+      <button @click="tab='pending'" :class="tab==='pending'?'bg-blue-600 text-white':'bg-white text-gray-600 hover:bg-gray-50'" class="px-5 py-2.5 rounded-lg font-medium text-sm shadow-sm">
+        ⏳ Pending
+      </button>
+      <button @click="tab='paid'" :class="tab==='paid'?'bg-blue-600 text-white':'bg-white text-gray-600 hover:bg-gray-50'" class="px-5 py-2.5 rounded-lg font-medium text-sm shadow-sm">
+        ✅ จ่ายแล้ว
+      </button>
+      <button @click="tab='confirm'" :class="tab==='confirm'?'bg-blue-600 text-white':'bg-white text-gray-600 hover:bg-gray-50'" class="px-5 py-2.5 rounded-lg font-medium text-sm shadow-sm">
+        ✏️ ยืนยันด้วยมือ
+      </button>
+      <button @click="tab='callback'" :class="tab==='callback'?'bg-blue-600 text-white':'bg-white text-gray-600 hover:bg-gray-50'" class="px-5 py-2.5 rounded-lg font-medium text-sm shadow-sm">
+        🔗 ทดสอบ Callback
+      </button>
+    </div>
+
+    <!-- Tab: Pending Payments -->
+    <div v-if="tab === 'pending'" class="space-y-3">
+      <div v-if="loading" class="text-center py-12 text-gray-400">⏳ กำลังโหลด...</div>
+      <div v-else-if="pendingPayments.length === 0" class="card p-8 text-center text-gray-400">
+        ✅ ไม่มีรายการที่รอตรวจสอบ
+      </div>
+      <div v-for="p in pendingPayments" :key="p.id" class="card p-4 flex items-center justify-between">
+        <div>
+          <div class="font-semibold">{{ p.customer_name || p.customer_id }}</div>
+          <div class="text-sm text-gray-500">
+            💰 {{ (p.amount || 0).toLocaleString() }} THB 
+            <span v-if="p.plan_id"> · 📋 {{ p.plan_id }}</span>
+            <span v-if="p.payment_ref"> · 🔖 {{ p.payment_ref }}</span>
+          </div>
+          <div class="text-xs text-gray-400">สร้าง: {{ formatDate(p.created_at) }}</div>
+        </div>
+        <button @click="manualVerify(p)" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+          ✅ ยืนยันรับเงิน
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab: Paid Payments -->
+    <div v-if="tab === 'paid'" class="space-y-3">
+      <div v-if="loading" class="text-center py-12 text-gray-400">⏳ กำลังโหลด...</div>
+      <div v-else-if="paidPayments.length === 0" class="card p-8 text-center text-gray-400">
+        ยังไม่มีรายการที่จ่ายแล้ว
+      </div>
+      <div v-for="p in paidPayments" :key="p.id" class="card p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-semibold">{{ p.customer_name || p.customer_id }}</div>
+            <div class="text-sm text-gray-500">
+              💰 {{ (p.amount || 0).toLocaleString() }} THB
+              <span v-if="p.plan_id"> · 📋 {{ p.plan_id }}</span>
+              <span v-if="p.bank_ref"> · 🏦 {{ p.bank_ref }}</span>
+            </div>
+            <div class="text-xs text-gray-400">
+              จ่ายเมื่อ: {{ formatDate(p.paid_at) }}
+            </div>
+          </div>
+          <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">✅ จ่ายแล้ว</span>
+        </div>
+      </div>
+      <div v-if="paidPayments.length >= 50" class="text-center text-sm text-gray-400">
+        แสดง 50 รายการล่าสุด
+      </div>
+    </div>
+
+    <!-- Tab: Manual Confirm -->
+    <div v-if="tab === 'confirm'" class="card p-6">
+      <h3 class="text-lg font-semibold mb-4">✏️ ยืนยันรับเงินด้วยมือ</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Customer ID *</label>
+          <input v-model="confirmForm.customerId" class="w-full border rounded-lg px-3 py-2" placeholder="เช่น user_xxx">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">ชื่อลูกค้า</label>
+          <input v-model="confirmForm.customerName" class="w-full border rounded-lg px-3 py-2" placeholder="ชื่อ">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">จำนวนเงิน (THB) *</label>
+          <input v-model="confirmForm.amount" type="number" step="0.01" class="w-full border rounded-lg px-3 py-2" placeholder="100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Plan ID</label>
+          <input v-model="confirmForm.planId" class="w-full border rounded-lg px-3 py-2" placeholder="เช่น pro_monthly">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">หมายเหตุ</label>
+          <input v-model="confirmForm.adminNote" class="w-full border rounded-lg px-3 py-2" placeholder="">
+        </div>
+      </div>
+      <button @click="submitConfirm" :disabled="submitting" class="mt-4 px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+        {{ submitting ? '⏳ กำลังดำเนินการ...' : '✅ ยืนยันรับเงิน' }}
+      </button>
+      <div v-if="confirmResult" :class="confirmResult.success ? 'mt-4 p-3 bg-green-50 text-green-700 rounded-lg' : 'mt-4 p-3 bg-red-50 text-red-700 rounded-lg'">
+        {{ confirmResult.message || JSON.stringify(confirmResult) }}
+      </div>
+    </div>
+
+    <!-- Tab: Test Callback -->
+    <div v-if="tab === 'callback'" class="card p-6">
+      <h3 class="text-lg font-semibold mb-4">🔗 ทดสอบ Bank Callback</h3>
+      <p class="text-sm text-gray-500 mb-4">ใช้สำหรับทดสอบการรับ callback จากธนาคาร โดยระบบจะ auto-match กับ pending payment</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Bank</label>
+          <select v-model="callbackForm.bank" class="w-full border rounded-lg px-3 py-2">
+            <option value="default">Generic (default)</option>
+            <option value="scb">SCB (ไทยพาณิชย์)</option>
+            <option value="kbank">KBank (กสิกรไทย)</option>
+            <option value="bbl">BBL (กรุงเทพ)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Amount (THB)</label>
+          <input v-model="callbackForm.amount" type="number" step="0.01" class="w-full border rounded-lg px-3 py-2" placeholder="100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Reference (ref)</label>
+          <input v-model="callbackForm.senderRef" class="w-full border rounded-lg px-3 py-2" placeholder="WPT-XXXX-XXXX">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Bank Ref (transaction ID)</label>
+          <input v-model="callbackForm.bankRef" class="w-full border rounded-lg px-3 py-2" placeholder="SCB-xxx">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Sender Name</label>
+          <input v-model="callbackForm.senderName" class="w-full border rounded-lg px-3 py-2" placeholder="ชื่อผู้โอน">
+        </div>
+      </div>
+      
+      <button @click="testCallback" :disabled="cbLoading" class="mt-4 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+        {{ cbLoading ? '⏳ กำลังส่ง...' : '🔗 ส่ง Callback ทดสอบ' }}
+      </button>
+
+      <div v-if="cbResult" class="mt-4">
+        <pre class="p-4 text-sm bg-gray-50 rounded-lg overflow-auto">{{ JSON.stringify(cbResult, null, 2) }}</pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          tab: 'pending',
+          loading: false,
+          submitting: false,
+          cbLoading: false,
+          pendingPayments: [],
+          paidPayments: [],
+          stats: {},
+          confirmForm: {
+            customerId: '', customerName: '', amount: '', planId: '', adminNote: '',
+          },
+          confirmResult: null,
+          callbackForm: {
+            bank: 'default', amount: '100', senderRef: '', bankRef: '', senderName: '',
+          },
+          cbResult: null,
+        };
+      },
+      methods: {
+        async refresh() {
+          this.loading = true;
+          try {
+            const [pendingRes, paidRes, statsRes] = await Promise.all([
+              fetch('/api/payment/qr/list?status=pending&limit=50'),
+              fetch('/api/payment/qr/list?status=paid&limit=50'),
+              fetch('/api/payment/qr/admin/stats'),
+            ]);
+            this.pendingPayments = await pendingRes.json();
+            this.paidPayments = await paidRes.json();
+            this.stats = await statsRes.json();
+          } catch(e) {
+            console.error(e);
+            alert('Error loading data');
+          } finally {
+            this.loading = false;
+          }
+        },
+        formatDate(d) {
+          if (!d) return '-';
+          return new Date(d + 'Z').toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+        },
+        async manualVerify(p) {
+          if (!confirm(`ยืนยันรับเงิน ${p.amount} THB จาก ${p.customer_name || p.customer_id}?`)) return;
+          this.submitting = true;
+          try {
+            const res = await fetch('/api/payment/qr/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ paymentId: p.id, verifyBy: 'admin', bankRef: 'admin_manual' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              this.refresh();
+            } else {
+              alert(data.error || 'Error');
+            }
+          } catch(e) {
+            alert('Error: ' + e.message);
+          } finally {
+            this.submitting = false;
+          }
+        },
+        async submitConfirm() {
+          if (!this.confirmForm.customerId || !this.confirmForm.amount) {
+            alert('กรุณากรอก Customer ID และจำนวนเงิน');
+            return;
+          }
+          this.submitting = true;
+          try {
+            const res = await fetch('/api/payment/qr/admin-confirm', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.confirmForm),
+            });
+            this.confirmResult = await res.json();
+            if (this.confirmResult.success) {
+              this.confirmForm = { customerId: '', customerName: '', amount: '', planId: '', adminNote: '' };
+              this.refresh();
+            }
+          } catch(e) {
+            this.confirmResult = { success: false, message: e.message };
+          } finally {
+            this.submitting = false;
+          }
+        },
+        async testCallback() {
+          this.cbLoading = true;
+          this.cbResult = null;
+          try {
+            const payload = {
+              amount: parseFloat(this.callbackForm.amount),
+              senderRef: this.callbackForm.senderRef,
+              bankRef: this.callbackForm.bankRef || `TEST-${Date.now()}`,
+              senderName: this.callbackForm.senderName || 'Test User',
+              senderAccount: '081-234-5678',
+            };
+            const bank = this.callbackForm.bank;
+            const url = bank === 'default' 
+              ? '/api/payment/qr/bank-callback'
+              : `/api/payment/qr/bank-callback/${bank}`;
+            
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            this.cbResult = await res.json();
+            if (this.cbResult.matched) {
+              this.refresh();
+            }
+          } catch(e) {
+            this.cbResult = { error: e.message };
+          } finally {
+            this.cbLoading = false;
+          }
+        },
+      },
+      mounted() {
+        this.refresh();
+      },
+    }).mount('#app');
+  </script>
+</body>
+</html>
