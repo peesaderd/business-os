@@ -681,8 +681,8 @@
           variants: (p.variants || []).length
         }));
 
-        renderProducts();
         showStep('product');
+        renderProducts();
         setStatus('👕 เลือกสินค้าที่ต้องการ', 'idle');
         setProgress(33);
       } catch (e) {
@@ -774,6 +774,7 @@
       const url = document.getElementById('artworkUrl').value.trim();
       if (!url) {
         toast('⚠️ กรุณาใส่ URL รูปอาร์ตเวิร์ก', 'error');
+        setStatus('🔴 ใส่ URL อาร์ตเวิร์กก่อน', 'error');
         return;
       }
 
