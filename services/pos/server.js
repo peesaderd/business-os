@@ -20,11 +20,13 @@ const { v4: uuidv4 } = require('uuid');
 const PosEngine = require('./pos-engine');
 const ReceiptGenerator = require('./receipt-generator');
 const OfflineSync = require('./offline-sync');
+const SchemaClient = require('./schema-client');
 
 // ── Config ─────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT, 10) || 8114;
 const MCP_URL = process.env.ERP_MCP_URL || 'http://localhost:18789';
+const SCHEMA_ENGINE_URL = process.env.SCHEMA_ENGINE_URL || 'http://localhost:8100';
 const TENANT_ID = process.env.DEFAULT_TENANT_ID || 'default';
 
 // ── Init ────────────────────────────────────────────────────────────
@@ -32,6 +34,12 @@ const TENANT_ID = process.env.DEFAULT_TENANT_ID || 'default';
 const app = express();
 const posEngine = new PosEngine({ mcpUrl: MCP_URL, tenantId: TENANT_ID });
 const offlineSync = new OfflineSync({ mcpUrl: MCP_URL, tenantId: TENANT_ID });
+const schemaClient = new SchemaClient();
+
+// Check Schema Engine health on startup (non-blocking)
+schemaClient.checkHealth().then(ok => {
+  console.log(`[POS] Schema Engine ${ok ? 'connected' : 'unreachable'} — ${SCHEMA_ENGINE_URL}`);
+});
 
 // ── Middleware ──────────────────────────────────────────────────────
 
@@ -54,7 +62,13 @@ app.use((req, _res, next) => {
 app.get('/api/pos/v1/health', async (_req, res) => {
   try {
     const status = await posEngine.health();
-    res.json({ success: true, ...status });
+    const schemaOk = await schemaClient.checkHealth();
+    res.json({
+      success: true,
+      ...status,
+      schemaEngine: schemaOk,
+      schemaEngineUrl: SCHEMA_ENGINE_URL,
+    });
   } catch (err) {
     res.status(503).json({ success: false, status: 'error', error: err.message });
   }
@@ -75,6 +89,17 @@ app.post('/api/pos/v1/sale', async (req, res) => {
     }
 
     const sale = await posEngine.createSale(saleData);
+
+    // ── Async: push to Schema Engine (non-blocking) ────────────
+    schemaClient.pushSale(sale).catch(() => {});
+    if (saleData.customerId) {
+      // Try to upsert customer from ERP to Schema Engine member schema
+      posEngine.searchCustomers('').then(customers => {
+        const customer = (Array.isArray(customers) ? customers : [])
+          .find(c => String(c.id) === String(saleData.customerId));
+        if (customer) schemaClient.upsertCustomer(customer).catch(() => {});
+      }).catch(() => {});
+    }
 
     // Generate receipt outputs
     const receiptData = ReceiptGenerator.buildReceiptData(sale);
@@ -128,6 +153,10 @@ app.post('/api/pos/v1/refund', async (req, res) => {
     }
 
     const refund = await posEngine.processRefund({ saleId, items, reason });
+
+    // ── Async: push refund to Schema Engine ───────────────────
+    schemaClient.pushRefund(refund).catch(() => {});
+
     res.json({ success: true, refund });
   } catch (err) {
     console.error('[POST /refund]', err.message);
