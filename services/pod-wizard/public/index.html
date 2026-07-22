@@ -461,7 +461,7 @@
       <div class="minecraft-icon">⚡</div>
       <h1><span class="accent">POD</span><span class="accent2">WIZARD</span></h1>
     </div>
-    <button class="btn btn-secondary" onclick="if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').then(() => toast('📦 พร้อมใช้งานแบบ Offline!', 'success'))" style="padding:8px 16px;font-size:12px;min-height:auto;">
+    <button class="btn btn-secondary" onclick="if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.v20260722.js').then(() => toast('📦 พร้อมใช้งานแบบ Offline!', 'success'))" style="padding:8px 16px;font-size:12px;min-height:auto;">
       📦 PWA
     </button>
   </header>
@@ -850,7 +850,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       showStep('provider');
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register('/sw.v20260722.js').catch(() => {});
       }
     });
   </script>
