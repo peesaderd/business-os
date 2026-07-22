@@ -26,7 +26,6 @@ dist/
 build/
 
 # ERP Stack snapshot (from remote server)
-erp-stack/
 
 # Separate repos cloned into workspace
 Star-Office-UI/
@@ -42,3 +41,4 @@ services/wpilot-engine/.env
 .aider*
 *.pyc
 __pycache__/
+erp-stack/
