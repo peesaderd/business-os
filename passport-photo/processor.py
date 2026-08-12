@@ -78,14 +78,14 @@ class PassportProcessor:
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         pil_img = Image.fromarray(img_rgb)
 
-        # Use rembg for background removal
+        # Use rembg for background removal - gentle settings to preserve facial features
         try:
             nobg_img = rembg_remove(
                 pil_img,
                 alpha_matting=True,
-                alpha_matting_foreground_threshold=240,
+                alpha_matting_foreground_threshold=200,
                 alpha_matting_background_threshold=10,
-                alpha_matting_erode_size=10,
+                alpha_matting_erode_size=0,  # No erosion - preserves beard/hair
             )
         except Exception as e:
             # Fallback: use original with no background removal
