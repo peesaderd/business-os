@@ -42,3 +42,9 @@ services/wpilot-engine/.env
 *.pyc
 __pycache__/
 erp-stack/
+
+# Large model files
+gfpgan/weights/
+*.pth
+*.pt
+*.onnx
