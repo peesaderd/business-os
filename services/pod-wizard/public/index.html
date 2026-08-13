@@ -720,7 +720,7 @@
         let cats = [];
 
         if (provider === 'printful') {
-          const r = await fetch('/api/pod/categories');
+          const r = await fetch('api/pod/categories');
           const data = await r.json();
           cats = (data.result || []).map(c => ({
             id: c.id,
@@ -757,7 +757,7 @@
     // ── Products ──
     async function loadProducts() {
       try {
-        const r = await fetch('/api/pod/products?category_id=' + state.category.id);
+        const r = await fetch('api/pod/products?category_id=' + state.category.id);
         const data = await r.json();
         state.products = (data.result || []).map(p => ({
           id: p.id,
@@ -819,7 +819,7 @@
     // ── Variants ──
     async function loadVariants(productId) {
       try {
-        const r = await fetch('/api/pod/products/' + productId);
+        const r = await fetch('api/pod/products/' + productId);
         const data = await r.json();
         const p = data.result?.product || data.result || {};
         state.variants = (p.variants || []).map(v => ({
@@ -859,7 +859,7 @@
       setStatus('📐 กำลังโหลดข้อมูลพื้นที่พิมพ์...', 'loading');
       setProgress(50);
       try {
-        const r = await fetch('/api/pod/print-info/' + state.product.id);
+        const r = await fetch('api/pod/print-info/' + state.product.id);
         const data = await r.json();
         state.printInfo = data.result || {};
         renderPrintInfo();
@@ -912,7 +912,7 @@
       setStatus('🎨 กำลังสร้างลายด้วย AI...', 'loading');
 
       try {
-        const r = await fetch('/api/pod/generate-design', {
+        const r = await fetch('api/pod/generate-design', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -982,7 +982,7 @@
       setProgress(70);
 
       try {
-        const r = await fetch('/api/pod/mockup', {
+        const r = await fetch('api/pod/mockup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -999,7 +999,7 @@
         let attempts = 0;
         while (attempts < 20) {
           await new Promise(resolve => setTimeout(resolve, 2000));
-          const r2 = await fetch('/api/pod/mockup/status/' + taskKey);
+          const r2 = await fetch('api/pod/mockup/status/' + taskKey);
           const d2 = await r2.json();
           if (d2.result?.status === 'completed') {
             const mockups = d2.result.mockups || [];
@@ -1048,7 +1048,7 @@
       setStatus('🤖 AI กำลังสร้างเนื้อหา...', 'loading');
 
       try {
-        const r = await fetch('/api/ai/generate-listing', {
+        const r = await fetch('api/ai/generate-listing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
