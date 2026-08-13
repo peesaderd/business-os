@@ -179,13 +179,89 @@ def parse_ocr_text(text: str) -> dict:
     return result
 
 
+def verify_slip(qr_data: dict, ocr_data: dict) -> dict:
+    """Cross-verify QR and OCR data to detect anomalies."""
+    verification = {
+        "score": 0,
+        "max_score": 5,
+        "checks": [],
+        "status": "unknown",
+        "warnings": []
+    }
+    
+    qr_parsed = qr_data.get("parsed", {}) if qr_data else {}
+    ocr_parsed = ocr_data.get("parsed", {}) if ocr_data else {}
+    
+    # Check 1: QR code found and valid format
+    if qr_data and qr_data.get("status") == "found":
+        verification["score"] += 1
+        verification["checks"].append({"name": "QR Found", "status": "pass"})
+    else:
+        verification["checks"].append({"name": "QR Found", "status": "fail"})
+        verification["warnings"].append("ไม่พบรหัส QR ในสลิป")
+    
+    # Check 2: PromptPay format valid
+    merchant = qr_parsed.get("merchant_info", {})
+    if merchant.get("is_promptpay"):
+        verification["score"] += 1
+        verification["checks"].append({"name": "PromptPay Valid", "status": "pass"})
+    else:
+        verification["checks"].append({"name": "PromptPay Valid", "status": "fail"})
+        verification["warnings"].append("QR ไม่ใช่ PromptPay format")
+    
+    # Check 3: Amount matches (QR vs OCR)
+    qr_amount = qr_parsed.get("amount")
+    ocr_amount = ocr_parsed.get("amount")
+    if qr_amount and ocr_amount:
+        if abs(qr_amount - ocr_amount) < 0.01:
+            verification["score"] += 1
+            verification["checks"].append({"name": "Amount Match", "status": "pass", "amount": qr_amount})
+        else:
+            verification["checks"].append({"name": "Amount Match", "status": "fail", "qr": qr_amount, "ocr": ocr_amount})
+            verification["warnings"].append(f"จำนวนเงินไม่ตรง: QR=฿{qr_amount} vs OCR=฿{ocr_amount}")
+    elif ocr_amount:
+        verification["score"] += 1
+        verification["checks"].append({"name": "Amount (OCR)", "status": "pass", "amount": ocr_amount})
+    else:
+        verification["checks"].append({"name": "Amount", "status": "unknown"})
+    
+    # Check 4: Bank name found
+    if ocr_parsed.get("sender_bank"):
+        verification["score"] += 1
+        verification["checks"].append({"name": "Bank Name", "status": "pass", "bank": ocr_parsed["sender_bank"]})
+    else:
+        verification["checks"].append({"name": "Bank Name", "status": "unknown"})
+    
+    # Check 5: Name found
+    if ocr_parsed.get("sender_name") or ocr_parsed.get("name"):
+        verification["score"] += 1
+        name = ocr_parsed.get("sender_name") or ocr_parsed.get("name")
+        verification["checks"].append({"name": "Sender Name", "status": "pass", "name": name})
+    else:
+        verification["checks"].append({"name": "Sender Name", "status": "unknown"})
+    
+    # Calculate status
+    score_pct = (verification["score"] / verification["max_score"]) * 100
+    if score_pct >= 80:
+        verification["status"] = "verified"
+    elif score_pct >= 60:
+        verification["status"] = "suspicious"
+    else:
+        verification["status"] = "failed"
+    
+    verification["score_pct"] = score_pct
+    
+    return verification
+
+
 def check_slip(image_path: str, qr_only: bool = False, ocr_only: bool = False) -> dict:
     """Main function to check a slip."""
     result = {
         "image": image_path,
         "qr": None,
         "ocr": None,
-        "summary": {}
+        "summary": {},
+        "verification": None
     }
     
     # QR decode
@@ -202,6 +278,9 @@ def check_slip(image_path: str, qr_only: bool = False, ocr_only: bool = False) -
         result["ocr"] = ocr_image(image_path)
         if result["ocr"]["parsed"]:
             result["summary"].update(result["ocr"]["parsed"])
+    
+    # Verification
+    result["verification"] = verify_slip(result["qr"], result["ocr"])
     
     return result
 

@@ -207,6 +207,44 @@ def handle_text(event):
         )
         return
 
+    # Confirmation
+    if text in ["ยืนยัน", "confirm", "confirmed"]:
+        pending = state.get("pending_verification")
+        if pending and pending.get("user_id") == user_id:
+            slip_data = pending.get("slip_data", {})
+            summary = slip_data.get("summary", {})
+            
+            # Notify admin with confirmation
+            admin_id = state.get("admin_user_id")
+            if admin_id:
+                confirm_text = (
+                    f"✅ ลูกค้ายืนยันการโอนเงินแล้ว!\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"💰 จำนวนเงิน: ฿{summary.get('amount', 'N/A')}\n"
+                    f"👤 ผู้โอน: {summary.get('sender_name', 'N/A')}\n"
+                    f"🏦 ธนาคาร: {summary.get('sender_bank', 'N/A')}\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"✅ ยืนยันโดย: {user_id[:8]}..."
+                )
+                line_bot_api.push_message(admin_id, TextSendMessage(text=confirm_text))
+            
+            # Reply to customer
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="✅ ขอบคุณที่ยืนยัน! Admin ได้รับแจ้งแล้วครับ")
+            )
+            
+            # Clear pending
+            state.pop("pending_verification", None)
+            save_state(state)
+            return
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="❌ ไม่มีสลิปที่ต้องยืนยัน กรุณาส่งรูปสลิปใหม่")
+            )
+            return
+
     # Default response
     line_bot_api.reply_message(
         event.reply_token,
@@ -247,8 +285,16 @@ def handle_image(event):
         result = check_slip(tmp_path)
         summary = result.get("summary", {})
 
-        # Build response
-        lines = ["✅ เช็คสลิปสำเร็จ!\n"]
+        # Build response with verification
+        verification = result.get("verification", {})
+        status = verification.get("status", "unknown")
+        score_pct = verification.get("score_pct", 0)
+        
+        # Status emoji
+        status_emoji = {"verified": "✅", "suspicious": "⚠️", "failed": "❌"}.get(status, "❓")
+        
+        lines = [f"{status_emoji} ผลการเช็คสลิป: {status.upper()}"]
+        lines.append(f"📊 คะแนนความน่าเชื่อถือ: {score_pct:.0f}%\n")
 
         if summary.get("amount"):
             lines.append(f"💰 จำนวนเงิน: ฿{summary['amount']:,.2f}")
@@ -273,6 +319,15 @@ def handle_image(event):
             qr_amount = qr["parsed"].get("amount")
             if qr_amount:
                 lines.append(f"📱 QR Amount: ฿{qr_amount:,.2f}")
+        
+        # Warnings
+        warnings = verification.get("warnings", [])
+        if warnings:
+            lines.append(f"\n⚠️ หมายเหตุ:")
+            for w in warnings:
+                lines.append(f"• {w}")
+        
+        lines.append(f"\n✅ ยืนยันการโอนเงินจริง โดยพิมพ์ 'ยืนยัน'")
 
         response_text = "\n".join(lines)
 
@@ -281,6 +336,15 @@ def handle_image(event):
             event.reply_token,
             TextSendMessage(text=response_text)
         )
+        
+        # Store pending verification
+        state["pending_verification"] = {
+            "user_id": user_id,
+            "slip_data": result,
+            "status": status,
+            "score_pct": score_pct
+        }
+        save_state(state)
 
         # Notify admin
         notify_admin_with_slip(result, user_id)
