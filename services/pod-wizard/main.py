@@ -528,16 +528,65 @@ DESIGNS_DIR = "/var/www/podwizard/designs"
 
 @app.post("/api/pod/generate-design")
 async def generate_design(body: dict):
-    from PIL import Image, ImageDraw, ImageFont
+    """Generate artwork design — AI first, fallback to geometric pattern"""
     product_name = body.get("product_name", "Custom Design")
-    style = body.get("style", "modern")
+    prompt = body.get("prompt", "") or body.get("style", "modern minimalist")
     os.makedirs(DESIGNS_DIR, exist_ok=True)
     filename = f"design_{uuid.uuid4().hex[:12]}.png"
     local_path = os.path.join(DESIGNS_DIR, filename)
+    
+    # Try AI image generation first (Prodia via image service)
+    try:
+        import httpx
+        from PIL import Image as PILImage, ImageDraw
+        
+        full_prompt = f"{prompt}, product design, clean background, high quality print-ready, no text, no watermark, no border, centered composition, {product_name}"
+        
+        # Create placeholder input image for img2img
+        placeholder_path = os.path.join(DESIGNS_DIR, "_placeholder.png")
+        os.makedirs(DESIGNS_DIR, exist_ok=True)
+        if not os.path.exists(placeholder_path):
+            img = PILImage.new("RGB", (512, 512), (240, 240, 240))
+            draw = ImageDraw.Draw(img)
+            draw.rectangle([100, 100, 412, 412], outline=(200, 200, 200), width=2)
+            img.save(placeholder_path, "PNG")
+        
+        # Read placeholder as base64
+        import base64
+        with open(placeholder_path, "rb") as f:
+            placeholder_b64 = base64.b64encode(f.read()).decode()
+        
+        async with httpx.AsyncClient(timeout=90) as client:
+            r = await client.post("http://127.0.0.1:8110/api/v1/image/generate", json={
+                "prompt": full_prompt,
+                "inputImage": f"data:image/png;base64,{placeholder_b64}",
+                "model": "nano-banana",
+                "width": 1024,
+                "height": 1024,
+                "aspectRatio": "1:1",
+                "style": "product",
+            })
+            
+            if r.status_code == 200:
+                data = r.json()
+                image_url = data.get("image_url") or data.get("url")
+                if image_url:
+                    # Download and save locally
+                    img_r = await client.get(image_url)
+                    if img_r.status_code == 200:
+                        with open(local_path, "wb") as f:
+                            f.write(img_r.content)
+                        public_url = f"https://podwizard.m2igen.com/designs/{filename}"
+                        return {"result": {"image_url": public_url, "prompt": prompt, "source": "ai"}}
+    except Exception as e:
+        logger.warning(f"AI image gen failed, falling back to geometric: {e}")
+    
+    # Fallback: geometric pattern
+    from PIL import Image, ImageDraw, ImageFont
     size = 1024
     img = Image.new("RGBA", (size, size), (255, 255, 255, 255))
     draw = ImageDraw.Draw(img)
-    seed = hash(product_name + style)
+    seed = hash(product_name + prompt)
     random.seed(seed)
     rng = random.Random(seed)
     bg_color = (245, 245, 250, 255)
@@ -575,22 +624,15 @@ async def generate_design(body: dict):
     letter = product_name[0].upper() if product_name else "P"
     try:
         font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 180)
-        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
     except Exception:
         font_large = ImageFont.load_default()
-        font_small = ImageFont.load_default()
     bbox = draw.textbbox((0, 0), letter, font=font_large)
     tw = bbox[2] - bbox[0]
     th = bbox[3] - bbox[1]
     draw.text((cx - tw // 2, cy - th // 2), letter, fill=primary, font=font_large)
-    style_text = style.upper() if style else ""
-    if style_text:
-        bbox2 = draw.textbbox((0, 0), style_text, font=font_small)
-        sw = bbox2[2] - bbox2[0]
-        draw.text((cx - sw // 2, size - 80), style_text, fill=(180, 180, 190, 255), font=font_small)
     img.save(local_path, "PNG")
     public_url = f"https://podwizard.m2igen.com/designs/{filename}"
-    return {"result": {"image_url": public_url, "prompt": f"{product_name} - {style}"}}
+    return {"result": {"image_url": public_url, "prompt": prompt, "source": "geometric_fallback"}}
 
 # ═══════════════════════════════════════════════════════════════════════════
 # POD — Static Product Reference (from pod_sizes.py / pod_data.py)

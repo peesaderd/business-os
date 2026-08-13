@@ -545,11 +545,15 @@
     <!-- Step 6: Artwork + AI Design -->
     <div class="card hidden" id="step-artwork">
       <h2>🎨 สร้าง Artwork</h2>
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">AI ออกแบบลายให้อัตโนมัติ หรือใส่ URL รูปของคุณเอง</p>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">AI ออกแบบลายให้ตาม prompt ที่พิมพ์ หรือใส่ URL รูปของคุณเอง</p>
+      <div class="form-group">
+        <label>🎨 Prompt ลาย</label>
+        <textarea id="designPrompt" rows="3" placeholder="例: แมวสวมแว่นกันแดด นั่งบนกระดานโต้คลื่น สไตล์มินิมอล" style="width:100%;padding:12px;background:#0d1117;border:var(--pixel-size) solid var(--border-color);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;"></textarea>
+      </div>
       <div id="designPreview" class="preview-area" style="min-height:280px;margin-bottom:12px;">
         <div class="preview-placeholder" id="designPlaceholder">
           <span class="emoji">🎨</span>
-          <p>กำลังสร้างลายด้วย AI...</p>
+          <p>พิมพ์ prompt แล้วกดสร้าง</p>
         </div>
         <img id="designImage" src="" alt="Design Preview" style="display:none;width:100%;max-width:400px;margin:0 auto;border:var(--pixel-size) solid var(--border-color);" />
       </div>
@@ -912,12 +916,14 @@
       setStatus('🎨 กำลังสร้างลายด้วย AI...', 'loading');
 
       try {
+        const prompt = document.getElementById('designPrompt').value.trim() || 'minimalist design';
         const r = await fetch('api/pod/generate-design', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             product_name: state.product?.name || 'Design',
-            style: 'modern minimalist'
+            prompt: prompt,
+            style: prompt
           })
         });
         const data = await r.json();
