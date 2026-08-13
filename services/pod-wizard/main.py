@@ -569,9 +569,19 @@ async def generate_design(body: dict):
             
             if r.status_code == 200:
                 data = r.json()
-                image_url = data.get("image_url") or data.get("url")
-                if image_url:
-                    # Download and save locally
+                # Try different response formats
+                image_url = data.get("image_url") or data.get("url") or data.get("output") or data.get("image")
+                image_b64 = data.get("image_base64") or data.get("base64") or data.get("output_base64")
+                
+                if image_b64:
+                    # Save base64 image
+                    img_data = base64.b64decode(image_b64)
+                    with open(local_path, "wb") as f:
+                        f.write(img_data)
+                    public_url = f"https://podwizard.m2igen.com/designs/{filename}"
+                    return {"result": {"image_url": public_url, "prompt": prompt, "source": "ai"}}
+                elif image_url:
+                    # Download URL
                     img_r = await client.get(image_url)
                     if img_r.status_code == 200:
                         with open(local_path, "wb") as f:
