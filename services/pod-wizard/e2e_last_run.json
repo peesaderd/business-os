@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-07-23T10:28:00Z",
+  "status": "FAILED",
+  "passed": 3,
+  "failed": 1,
+  "total": 13,
+  "failure_step": "Step 4: Click Printful -> categories load",
+  "failure_detail": "Backend API /api/pod/categories returned HTTP 502 Bad Gateway. Category list stayed empty.",
+  "root_cause": "Printful proxy endpoint on server is down/unreachable"
+}

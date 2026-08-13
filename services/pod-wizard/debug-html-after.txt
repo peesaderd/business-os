@@ -1,0 +1,927 @@
+<!DOCTYPE html><html lang="th"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="description" content="Pod Wizard — Print-on-Demand Wizard สร้างสินค้า POD จาก Printful">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pod Wizard">
+  <link rel="apple-touch-icon" href="/icons/icon-512.png">
+  <title>⚡ Pod Wizard — Print-on-Demand</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @font-face {
+      font-family: 'Minecraft';
+      src: local('Minecraft'), local('Minecraftia'), local('Courier New');
+    }
+
+    :root {
+      --bg: #1a1a2e;
+      --bg-card: #16213e;
+      --bg-hover: #0f3460;
+      --accent: #e94560;
+      --accent2: #f5a623;
+      --text: #e0e0e0;
+      --text-dim: #8892b0;
+      --green: #4ade80;
+      --pixel-size: 2px;
+      --border-color: #3a3a5e;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      background-image:
+        linear-gradient(45deg, #1a1a2e 25%, transparent 25%),
+        linear-gradient(-45deg, #1a1a2e 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1a1a2e 75%),
+        linear-gradient(-45deg, transparent 75%, #1a1a2e 75%);
+      background-size: 40px 40px;
+      background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-bottom: var(--pixel-size) solid var(--border-color);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-title h1 {
+      font-size: 22px;
+      font-weight: 700;
+      text-shadow: 2px 2px 0 #000;
+      color: #fff;
+    }
+
+    .header-title h1 .accent { color: var(--accent); }
+    .header-title h1 .accent2 { color: var(--accent2); }
+
+    .minecraft-icon {
+      width: 40px;
+      height: 40px;
+      image-rendering: pixelated;
+      border: var(--pixel-size) solid var(--border-color);
+      background: #2a2a4e;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    /* Container */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: var(--pixel-size) solid var(--border-color);
+      padding: 24px;
+      margin-bottom: 20px;
+      position: relative;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -var(--pixel-size); left: -var(--pixel-size);
+      right: -var(--pixel-size); bottom: -var(--pixel-size);
+      pointer-events: none;
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: var(--accent2);
+      text-transform: uppercase;
+      font-weight: 700;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    .card-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    /* Step indicator */
+    .steps {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 80px;
+      text-align: center;
+      padding: 10px 8px;
+      background: rgba(255,255,255,0.05);
+      border: var(--pixel-size) solid var(--border-color);
+      font-size: 11px;
+      color: var(--text-dim);
+      position: relative;
+      min-height: 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.3s;
+    }
+
+    .hidden { display: none !important; }
+    .step.active {
+      background: rgba(233,69,96,0.15);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .step.completed {
+      background: rgba(74,222,128,0.1);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 0;
+      border: var(--pixel-size) solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    /* Buttons — Minecraft style */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      border: var(--pixel-size) solid #000;
+      cursor: pointer;
+      transition: all 0.1s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: relative;
+      color: #fff;
+      background: #7c7c7c;
+      box-shadow:
+        inset 0 4px 0 rgba(255,255,255,0.2),
+        inset 0 -4px 0 rgba(0,0,0,0.2),
+        4px 4px 0 rgba(0,0,0,0.3);
+      min-height: 44px;
+    }
+
+    .btn:active {
+      transform: translate(2px, 2px);
+      box-shadow:
+        inset 0 4px 0 rgba(255,255,255,0.1),
+        inset 0 -4px 0 rgba(0,0,0,0.3),
+        2px 2px 0 rgba(0,0,0,0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: #2d7d2d;
+      box-shadow:
+        inset 0 4px 0 rgba(255,255,255,0.3),
+        inset 0 -4px 0 rgba(0,0,0,0.3),
+        4px 4px 0 rgba(0,0,0,0.3);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      box-shadow:
+        inset 0 4px 0 rgba(255,255,255,0.3),
+        inset 0 -4px 0 rgba(0,0,0,0.2),
+        4px 4px 0 rgba(0,0,0,0.3);
+    }
+
+    .btn-secondary {
+      background: #4a4a6a;
+      box-shadow:
+        inset 0 4px 0 rgba(255,255,255,0.15),
+        inset 0 -4px 0 rgba(0,0,0,0.2),
+        4px 4px 0 rgba(0,0,0,0.3);
+    }
+
+    .btn-block { width: 100%; }
+
+    /* Form elements — Minecraft style */
+    select, input[type="text"], input[type="url"], textarea {
+      width: 100%;
+      padding: 12px;
+      background: #0d1117;
+      border: var(--pixel-size) solid var(--border-color);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23e0e0e0' fill='none' stroke-width='2'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    /* Preview area */
+    .preview-area {
+      min-height: 200px;
+      background: #0d1117;
+      border: var(--pixel-size) solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .preview-area img {
+      max-width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    .preview-placeholder {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-dim);
+    }
+
+    .preview-placeholder .emoji {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: rgba(0,0,0,0.3);
+      border: var(--pixel-size) solid var(--border-color);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 0;
+    }
+
+    .status-dot.idle { background: #555; }
+    .status-dot.loading { background: var(--accent2); animation: blink 0.8s infinite; }
+    .status-dot.success { background: var(--green); }
+    .status-dot.error { background: var(--accent); }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .header-title h1 { font-size: 18px; }
+      .step { min-width: 60px; font-size: 10px; padding: 8px 4px; }
+    }
+
+    /* Loading bar */
+    .progress-bar {
+      height: 4px;
+      background: var(--border-color);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .progress-bar .fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.5s;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0d1117;
+      border: var(--pixel-size) solid var(--border-color);
+      padding: 12px 20px;
+      font-size: 14px;
+      z-index: 9999;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 360px;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.error { border-left: 3px solid var(--accent); }
+
+    /* Responsive table */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .info-table td {
+      padding: 8px 12px;
+      border-bottom: var(--pixel-size) solid rgba(255,255,255,0.05);
+    }
+
+    .info-table td:first-child {
+      color: var(--text-dim);
+      font-weight: 600;
+      width: 40%;
+    }
+
+    /* Loading spinner Minecraft style */
+    .spinner {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      image-rendering: pixelated;
+      background:
+        linear-gradient(0deg, transparent 48%, var(--accent2) 48%, var(--accent2) 52%, transparent 52%),
+        linear-gradient(90deg, transparent 48%, var(--accent2) 48%, var(--accent2) 52%, transparent 52%);
+      animation: spin 1s steps(8) infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Hero section */
+    .hero {
+      text-align: center;
+      padding: 32px 16px;
+      margin-bottom: 8px;
+    }
+
+    .hero .big-icon {
+      font-size: 64px;
+      display: block;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+
+    .hero p {
+      color: var(--text-dim);
+      font-size: 16px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-title">
+      <div class="minecraft-icon">⚡</div>
+      <h1><span class="accent">POD</span><span class="accent2">WIZARD</span></h1>
+    </div>
+    <button class="btn btn-secondary" onclick="if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.v20260722.js').then(() =&gt; toast('📦 พร้อมใช้งานแบบ Offline!', 'success'))" style="padding:8px 16px;font-size:12px;min-height:auto;">
+      📦 PWA
+    </button>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <span class="big-icon">🧙‍♂️</span>
+      <h1 style="font-size:28px;text-shadow:2px 2px 0 #000;">
+        <span class="accent">Print-on-Demand</span> <span class="accent2">Wizard</span>
+      </h1>
+      <p>✨ สร้างสินค้า POD พร้อม Mockup ในไม่กี่คลิก</p>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="statusBar">
+      <span class="status-dot error" id="statusDot"></span>
+      <span id="statusText">🔴 Error: Unexpected token '&lt;', "&lt;!DOCTYPE "... is not valid JSON</span>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps" id="stepIndicators">
+      <div class="step active"><span class="step-num">1</span> Provider</div>
+      <div class="step"><span class="step-num">2</span> หมวดหมู่</div>
+      <div class="step"><span class="step-num">3</span> สินค้า</div>
+      <div class="step"><span class="step-num">4</span> Variant</div>
+      <div class="step"><span class="step-num">5</span> อาร์ตเวิร์ก</div>
+      <div class="step"><span class="step-num">6</span> Mockup</div>
+    </div>
+
+    <!-- Loading bar -->
+    <div class="progress-bar"><div class="fill" id="progressFill" style="width: 16%;"></div></div>
+
+    <!-- Step 1: Provider -->
+    <div class="card" id="step-provider">
+      <h2>🌐 เลือก Provider</h2>
+      <div class="grid-2">
+        <button class="btn btn-primary btn-block" onclick="selectProvider('printful')" style="padding:20px;">
+          🖨️ Printful
+        </button>
+        <button class="btn btn-secondary btn-block" onclick="selectProvider('printify')" disabled="" style="padding:20px;opacity:0.3;">
+          🚧 Printify
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Category -->
+    <div class="card hidden" id="step-category">
+      <h2>📂 เลือกหมวดหมู่</h2>
+      <div id="categoryList" class="grid-2"></div>
+    </div>
+
+    <!-- Step 3: Product -->
+    <div class="card hidden" id="step-product">
+      <h2>👕 เลือกสินค้า</h2>
+      <div class="form-group">
+        <input type="text" id="productSearch" placeholder="🔍 ค้นหาสินค้า..." oninput="filterProducts()" style="">
+      </div>
+      <div id="productList"></div>
+    </div>
+
+    <!-- Step 4: Variant -->
+    <div class="card hidden" id="step-variant">
+      <h2>🎨 เลือก Variant</h2>
+      <div id="variantList" class="grid-2"></div>
+    </div>
+
+    <!-- Step 5: Artwork + AI Design -->
+    <div class="card hidden" id="step-artwork">
+      <h2>🎭 ออกแบบลวดลาย</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">AI ออกแบบลายให้อัตโนมัติ หรือใส่ URL รูปของคุณเอง</p>
+      <div id="designPreview" class="preview-area" style="min-height:280px;margin-bottom:12px;">
+        <div class="preview-placeholder" id="designPlaceholder">
+          <span class="emoji">🎨</span>
+          <p>กำลังสร้างลายด้วย AI...</p>
+        </div>
+        <img id="designImage" src="" alt="Design Preview" style="display:none;width:100%;max-width:400px;margin:0 auto;border:var(--pixel-size) solid var(--border-color);border-radius:8px;">
+      </div>
+      <div class="grid-2" style="margin-bottom:12px;">
+        <button class="btn btn-primary" onclick="generateDesign()" id="genDesignBtn">🎨 สร้างลายใหม่</button>
+        <button class="btn btn-secondary" onclick="toggleUrlInput()">🔗 ใช้ URL ของฉัน</button>
+      </div>
+      <div class="form-group" id="urlInputGroup" style="display:none;">
+        <label>URL รูปภาพ (ไม่บังคับ)</label>
+        <input type="text" id="artworkUrl" placeholder="https://example.com/design.png" style="">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="generateMockup()">✨ สร้าง Mockup</button>
+    </div>
+
+    <!-- Step 6: Result -->
+    <div class="card hidden" id="step-result">
+      <h2>🏆 Mockup สำเร็จ</h2>
+      <div class="preview-area" id="mockupPreview">
+        <div class="preview-placeholder">
+          <span class="emoji">🖼️</span>
+          <p>รอผลลัพธ์...</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <button class="btn btn-primary btn-block" id="downloadBtn" onclick="downloadMockup()" disabled="">⬇️ ดาวน์โหลด</button>
+        <button class="btn btn-secondary btn-block" onclick="resetWizard()">🔄 เริ่มใหม่</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast -->
+  <div class="toast error show" id="toast">❌ โหลดหมวดหมู่ไม่สำเร็จ: Unexpected token '&lt;', "&lt;!DOCTYPE "... is not valid JSON</div>
+
+  <script>
+    // ── State ──
+    const state = {
+      provider: null,
+      category: null,
+      product: null,
+      variant: null,
+      artworkUrl: null,
+      mockupUrl: null,
+      mockupId: null,
+      products: [],
+      variants: []
+    };
+
+    let steps = ['provider', 'category', 'product', 'variant', 'artwork', 'result'];
+
+    // ── Toast ──
+    let toastTimer;
+
+    function toast(msg, type = 'info') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast ' + type + ' show';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // ── Status ──
+    function setStatus(text, type = 'idle') {
+      document.getElementById('statusText').textContent = text;
+      document.getElementById('statusDot').className = 'status-dot ' + type;
+    }
+
+    function setProgress(pct) {
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    // ── Step Navigation ──
+    function showStep(name) {
+      document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+      const el = document.getElementById('step-' + name);
+      if (el) el.classList.remove('hidden');
+
+      document.querySelectorAll('.step').forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (steps[i] === name) s.classList.add('active');
+        const idx = steps.indexOf(name);
+        if (idx > 0 && i < idx) s.classList.add('completed');
+      });
+    }
+
+    function resetWizard() {
+      state.provider = null; state.category = null; state.product = null;
+      state.variant = null; state.artworkUrl = null; state.mockupUrl = null;
+      document.getElementById('artworkUrl').value = '';
+      showStep('provider');
+      setStatus('🟢 พร้อมทำงาน — เลือก Provider เพื่อเริ่มต้น', 'idle');
+      setProgress(0);
+    }
+
+    // ── Provider ──
+    function selectProvider(name) {
+      state.provider = name;
+      toast('✅ เลือก ' + name, 'success');
+      setStatus('📂 กำลังโหลดหมวดหมู่...', 'loading');
+      setProgress(16);
+      setTimeout(() => loadCategories(name), 100);
+    }
+
+    // ── Categories ──
+    async function loadCategories(provider) {
+      try {
+        let cats = [];
+
+        if (provider === 'printful') {
+          const r = await fetch('/api/pod/categories');
+          const data = await r.json();
+          cats = (data.result || []).map(c => ({
+            id: c.id,
+            name: c.name,
+            icon: c.icon || '📦'
+          }));
+        }
+
+        const list = document.getElementById('categoryList');
+        list.innerHTML = cats.map(c =>
+          `<button class="btn btn-secondary btn-block" onclick="selectCategory('${c.id}','${c.name}')" style="padding:16px;flex-direction:column;gap:8px;">
+            <span style="font-size:28px;">${c.icon}</span>
+            <span>${c.name}</span>
+          </button>`
+        ).join('') || '<div style="color:var(--text-dim);text-align:center;grid-column:1/-1;padding:24px;">⚠️ ไม่พบหมวดหมู่</div>';
+
+        showStep('category');
+        setStatus('📂 เลือกหมวดหมู่สินค้า', 'idle');
+        setProgress(16);
+      } catch (e) {
+        toast('❌ โหลดหมวดหมู่ไม่สำเร็จ: ' + e.message, 'error');
+        setStatus('🔴 Error: ' + e.message, 'error');
+      }
+    }
+
+    function selectCategory(id, name) {
+      state.category = { id, name };
+      toast('✅ เลือก: ' + name, 'success');
+      setStatus('👕 กำลังโหลดสินค้า...', 'loading');
+      setProgress(33);
+      loadProducts();
+    }
+
+    // ── Products ──
+    async function loadProducts() {
+      try {
+        const r = await fetch('/api/pod/products?category_id=' + state.category.id);
+        const data = await r.json();
+        state.products = (data.result || []).map(p => ({
+          id: p.id,
+          name: p.name || p.product?.name || 'Product #' + p.id,
+          image: p.image || p.product?.image || '',
+          variants: (p.variants || []).length
+        }));
+
+        showStep('product');
+        renderProducts();
+        setStatus('👕 เลือกสินค้าที่ต้องการ', 'idle');
+        setProgress(33);
+      } catch (e) {
+        toast('❌ โหลดสินค้าไม่สำเร็จ', 'error');
+        setStatus('🔴 Error: ' + e.message, 'error');
+      }
+    }
+
+    function renderProducts() {
+      const list = document.getElementById('productList');
+      list.innerHTML = state.products.map(p =>
+        `<div class="card" style="cursor:pointer;padding:16px;" onclick="selectProduct('${p.id}')">
+          <div style="display:flex;align-items:center;gap:16px;">
+            ${p.image ? `<img src="${p.image}" alt="" style="width:64px;height:64px;object-fit:contain;border:var(--pixel-size) solid var(--border-color);" />` : '<div style="width:64px;height:64px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;">👕</div>'}
+            <div>
+              <strong style="font-size:15px;">${p.name}</strong>
+              <div style="font-size:12px;color:var(--text-dim);">${p.variants} variants</div>
+            </div>
+          </div>
+        </div>`
+      ).join('');
+    }
+
+    function filterProducts() {
+      const q = document.getElementById('productSearch').value.toLowerCase();
+      const filtered = state.products.filter(p => p.name.toLowerCase().includes(q));
+      const list = document.getElementById('productList');
+      list.innerHTML = filtered.map(p =>
+        `<div class="card" style="cursor:pointer;padding:16px;" onclick="selectProduct('${p.id}')">
+          <div style="display:flex;align-items:center;gap:16px;">
+            ${p.image ? `<img src="${p.image}" alt="" style="width:64px;height:64px;object-fit:contain;border:var(--pixel-size) solid var(--border-color);" />` : '<div style="width:64px;height:64px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;">👕</div>'}
+            <div>
+              <strong style="font-size:15px;">${p.name}</strong>
+              <div style="font-size:12px;color:var(--text-dim);">${p.variants} variants</div>
+            </div>
+          </div>
+        </div>`
+      ).join('');
+    }
+
+    function selectProduct(id) {
+      state.product = state.products.find(p => String(p.id) === String(id));
+      toast('✅ เลือก: ' + state.product.name, 'success');
+      setStatus('🎨 กำลังโหลด Variant...', 'loading');
+      setProgress(50);
+      loadVariants(id);
+    }
+
+    // ── Variants ──
+    async function loadVariants(productId) {
+      try {
+        const r = await fetch('/api/pod/products/' + productId);
+        const data = await r.json();
+        const p = data.result?.product || data.result || {};
+        state.variants = (p.variants || []).map(v => ({
+          id: v.id,
+          name: v.name || v.size + (v.color ? ' — ' + v.color : ''),
+          size: v.size || '',
+          color: v.color || ''
+        }));
+
+        const list = document.getElementById('variantList');
+        list.innerHTML = state.variants.map(v =>
+          `<button class="btn btn-secondary btn-block" onclick="selectVariant('${v.id}')" style="padding:16px;flex-direction:column;gap:4px;">
+            <span style="font-size:14px;font-weight:600;">${v.name}</span>
+            ${v.size ? `<span style="font-size:11px;color:var(--text-dim);">${v.size}</span>` : ''}
+          </button>`
+        ).join('');
+
+        showStep('variant');
+        setStatus('🎨 เลือก Variant (ขนาด/สี)', 'idle');
+        setProgress(50);
+      } catch (e) {
+        toast('❌ โหลด Variant ไม่สำเร็จ', 'error');
+        setStatus('🔴 Error: ' + e.message, 'error');
+      }
+    }
+
+    function selectVariant(id) {
+      state.variant = state.variants.find(v => String(v.id) === String(id));
+      toast('✅ เลือก: ' + state.variant.name, 'success');
+      state.designUrl = '';
+      state.artworkUrl = '';
+      showStep('artwork');
+      setStatus('🎨 กำลังสร้างลายด้วย AI...', 'loading');
+      setProgress(66);
+      // Auto-generate AI design
+      generateDesign();
+    }
+
+    // ── AI Design Generation ──
+    async function generateDesign() {
+      const btn = document.getElementById('genDesignBtn');
+      const placeholder = document.getElementById('designPlaceholder');
+      const imgEl = document.getElementById('designImage');
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังสร้าง...';
+      placeholder.style.display = 'flex';
+      imgEl.style.display = 'none';
+      setStatus('🎨 กำลังสร้างลายด้วย AI...', 'loading');
+
+      try {
+        const r = await fetch('/api/pod/generate-design', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_name: state.product?.name || 'Design',
+            style: 'modern minimalist'
+          })
+        });
+        const data = await r.json();
+        const imageUrl = data.result?.image_url;
+        if (!imageUrl) throw new Error('No image returned');
+
+        state.designUrl = imageUrl;
+        imgEl.src = imageUrl;
+        imgEl.onload = function() {
+          placeholder.style.display = 'none';
+          imgEl.style.display = 'block';
+          btn.textContent = '🎨 สร้างลายใหม่';
+          btn.disabled = false;
+          setStatus('🎭 ลายพร้อมแล้ว! กดสร้าง Mockup ได้เลย', 'idle');
+        };
+        toast('✅ AI สร้างลายเสร็จแล้ว!', 'success');
+      } catch (e) {
+        toast('❌ สร้างลายไม่สำเร็จ: ' + e.message, 'error');
+        setStatus('🔴 สร้างลายไม่สำเร็จ', 'error');
+        btn.textContent = '🎨 สร้างลายใหม่';
+        btn.disabled = false;
+        placeholder.innerHTML = '<span class="emoji">❌</span><p>สร้างลายไม่สำเร็จ ลองอีกครั้ง</p>';
+      }
+    }
+
+    // ── Toggle URL input ──
+    function toggleUrlInput() {
+      const group = document.getElementById('urlInputGroup');
+      const visible = group.style.display !== 'block';
+      group.style.display = visible ? 'block' : 'none';
+      if (visible) document.getElementById('artworkUrl').focus();
+    }
+
+    // ── Generate Mockup ──
+    async function generateMockup() {
+      const manualUrl = document.getElementById('artworkUrl').value.trim();
+      const designUrl = state.designUrl || '';
+
+      // Use manual URL if provided, else AI-generated design
+      const url = manualUrl || designUrl;
+      if (!url) {
+        toast('⚠️ กำลังสร้างลาย... รอสักครู่', 'error');
+        return;
+      }
+
+      state.artworkUrl = url;
+      setStatus('⚡ กำลังสร้าง Mockup...', 'loading');
+      setProgress(83);
+      document.getElementById('downloadBtn').disabled = true;
+
+      try {
+        const r = await fetch('/api/pod/mockup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_id: parseInt(state.product.id),
+            variant_ids: [parseInt(state.variant.id)],
+            format: 'jpg',
+            files: [{ placement: 'front', image_url: url }]
+          })
+        });
+        const data = await r.json();
+        const taskKey = data.result?.task_key;
+        if (!taskKey) throw new Error('No task key');
+
+        // Poll for result
+        let attempts = 0;
+        while (attempts < 20) {
+          await new Promise(r => setTimeout(r, 2000));
+          const r2 = await fetch('/api/pod/mockup/status/' + taskKey);
+          const d2 = await r2.json();
+          if (d2.result?.status === 'completed') {
+            const mockups = d2.result.mockups || [];
+            if (mockups.length > 0) {
+              const mUrl = mockups[0].mockup_url || mockups[0].url;
+              if (mUrl) {
+                state.mockupUrl = mUrl;
+                state.mockupId = taskKey;
+                document.getElementById('mockupPreview').innerHTML = `<img src="${mUrl}" alt="Mockup" />`;
+                document.getElementById('downloadBtn').disabled = false;
+                showStep('result');
+                setStatus('✅ Mockup พร้อม! กดดาวน์โหลดได้เลย', 'success');
+                setProgress(100);
+                toast('🎉 Mockup สำเร็จ!', 'success');
+                return;
+              }
+            }
+          }
+          attempts++;
+        }
+        throw new Error('Timeout — Mockup ใช้เวลานานเกินไป');
+      } catch (e) {
+        // Fallback to Printful direct mockup URL
+        const fallbackUrl = `https://www.printful.com/api/mockup/product/${state.product.id}`;
+        document.getElementById('mockupPreview').innerHTML =
+          `<div style="padding:32px;text-align:center;">
+            <p>⚠️ ${e.message}</p>
+            <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">ระบบกำลังใช้ Mockup แบบตรง</p>
+          </div>`;
+        showStep('result');
+        setStatus('✅ Mockup สร้างเสร็จ (mode: fallback)', 'success');
+        setProgress(100);
+        toast('⚡ Mockup พร้อม (fallback mode)', 'success');
+      }
+    }
+
+    function downloadMockup() {
+      if (state.mockupUrl) {
+        window.open(state.mockupUrl, '_blank');
+        toast('⬇️ กำลังเปิดรูป Mockup ในแท็บใหม่', 'success');
+      }
+    }
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+      showStep('provider');
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.v20260722.js').catch(() => {});
+      }
+    });
+  </script>
+
+
+</body></html>

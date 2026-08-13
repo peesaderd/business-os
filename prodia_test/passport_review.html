@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passport Photo Pipeline V1 — Batch Results</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a1a2e; color: #fff; padding: 20px; }
+        h1 { text-align: center; margin-bottom: 10px; color: #00d4ff; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        .stats { display: flex; justify-content: center; gap: 30px; margin-bottom: 30px; }
+        .stat { background: #16213e; padding: 15px 25px; border-radius: 10px; text-align: center; }
+        .stat .num { font-size: 28px; font-weight: bold; color: #00d4ff; }
+        .stat .label { font-size: 12px; color: #888; margin-top: 5px; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: #16213e; border-radius: 12px; overflow: hidden; transition: transform 0.2s; }
+        .card:hover { transform: scale(1.03); }
+        .card-header { padding: 10px; text-align: center; font-weight: bold; background: #0f3460; }
+        .card-images { display: flex; padding: 10px; gap: 10px; }
+        .card-images .col { flex: 1; text-align: center; }
+        .card-images img { width: 100%; border-radius: 8px; border: 2px solid #333; }
+        .card-images .label { font-size: 11px; color: #888; margin-top: 5px; }
+        .card-meta { padding: 8px 10px; font-size: 11px; color: #666; text-align: center; }
+        .prompt { max-width: 1400px; margin: 40px auto 0; background: #16213e; padding: 20px; border-radius: 12px; }
+        .prompt h3 { color: #00d4ff; margin-bottom: 10px; }
+        .prompt pre { background: #0f3460; padding: 15px; border-radius: 8px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>📸 Passport Photo Pipeline V1 — Batch Results</h1>
+    <p class="subtitle">FLUX i2i Based | Crop → FLUX i2i → Done | $0.004/photo</p>
+
+    <div class="stats">
+        <div class="stat"><div class="num">10</div><div class="label">Photos Processed</div></div>
+        <div class="stat"><div class="num">$0.04</div><div class="label">Total Cost</div></div>
+        <div class="stat"><div class="num">10/10</div><div class="label">Success Rate</div></div>
+        <div class="stat"><div class="num">$0.004</div><div class="label">Per Photo</div></div>
+    </div>
+
+    <div class="grid">
+        <!-- Photo 1 -->
+        <div class="card">
+            <div class="card-header">#1 ผู้หญิงเสื้อดำ</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14378---3366a0cd-e417-4354-8276-9462d1043209.jpg" alt="Input 1">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_01.jpg" alt="Output 1">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 2 -->
+        <div class="card">
+            <div class="card-header">#2 ผู้ชายเสื้อเทา</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14373---e23f0ba2-51f6-475e-87ed-2f85b6090143.jpg" alt="Input 2">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_02.jpg" alt="Output 2">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 3 -->
+        <div class="card">
+            <div class="card-header">#3 ผู้หญิงเสื้อชมพู</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14372---a21ba455-f565-41ef-b4cc-f85cf7c2d2fa.jpg" alt="Input 3">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_03.jpg" alt="Output 3">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 4 -->
+        <div class="card">
+            <div class="card-header">#4 ผู้ชายเสื้อน้ำเงิน</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14375---cb35e79c-7189-4076-8508-6d8a8b12162b.jpg" alt="Input 4">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_04.jpg" alt="Output 4">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 5 -->
+        <div class="card">
+            <div class="card-header">#5 ผู้หญิงเสื้อชมพู</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14371---4d20b608-a25c-494e-ac2a-274e5e101c49.jpg" alt="Input 5">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_05.jpg" alt="Output 5">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 6 -->
+        <div class="card">
+            <div class="card-header">#6 ผู้หญิงเสื้อเทา</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14376---0252294d-c9ad-4454-85cd-720149ae5943.jpg" alt="Input 6">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_06.jpg" alt="Output 6">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 7 -->
+        <div class="card">
+            <div class="card-header">#7 ผู้ชายเสื้อขาว</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14374---ca7d7ad7-8211-471f-b10b-241fe4714e10.jpg" alt="Input 7">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_07.jpg" alt="Output 7">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 8 -->
+        <div class="card">
+            <div class="card-header">#8 ผู้หญิงเสื้อขาว</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14377---537eb846-4fab-409b-aeb5-81d7204de6ef.jpg" alt="Input 8">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_08.jpg" alt="Output 8">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 9 -->
+        <div class="card">
+            <div class="card-header">#9 ผู้ชายเสื้อน้ำเงิน</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14369---a4879466-7190-405f-8c17-0a672603adf6.jpg" alt="Input 9">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_09.jpg" alt="Output 9">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+
+        <!-- Photo 10 -->
+        <div class="card">
+            <div class="card-header">#10 ผู้หญิงเสื้อขาว</div>
+            <div class="card-images">
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/media/inbound/14370---01737fb7-2088-4f7d-b5fb-43119b391db8.jpg" alt="Input 10">
+                    <div class="label">Input</div>
+                </div>
+                <div class="col">
+                    <img src="/home/openhands/.openclaw/workspace/prodia_test/batch_output/passport_10.jpg" alt="Output 10">
+                    <div class="label">Output</div>
+                </div>
+            </div>
+            <div class="card-meta">✅ FLUX i2i | strength=0.65 | $0.004</div>
+        </div>
+    </div>
+
+    <div class="prompt">
+        <h3>📝 Prompt Used</h3>
+        <pre>keep the person's face exactly as it is, do not change facial features,
+change clothing to white formal dress shirt only,
+replace background with solid light blue color,
+improve lighting to bright even studio lighting,
+remove acne and blemishes from skin,
+passport ID photo style, government photo</pre>
+    </div>
+</body>
+</html>
