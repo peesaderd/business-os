@@ -96,6 +96,12 @@ app.add_middleware(
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
 if os.path.isdir(PUBLIC_DIR):
     app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="static")
+    # Also mount at root for PWA assets (manifest, sw, icons)
+    # API routes take priority over mount, so this won't break /api/*
+    try:
+        app.mount("/manifest.json", StaticFiles(directory=PUBLIC_DIR, check_dir=False), name="manifest")
+    except Exception:
+        pass
 
 # Static product images dir
 try:
