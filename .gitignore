@@ -42,6 +42,8 @@ services/wpilot-engine/.env
 *.pyc
 __pycache__/
 erp-stack/
+!erp-stack/modules/passport/
+!erp-stack/frontend/passport/
 
 # Large model files
 gfpgan/weights/
