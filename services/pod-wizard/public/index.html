@@ -489,8 +489,12 @@
       <div class="step"><span class="step-num">2</span> หมวดหมู่</div>
       <div class="step"><span class="step-num">3</span> สินค้า</div>
       <div class="step"><span class="step-num">4</span> Variant</div>
-      <div class="step"><span class="step-num">5</span> อาร์ตเวิร์ก</div>
-      <div class="step"><span class="step-num">6</span> Mockup</div>
+      <div class="step"><span class="step-num">5</span> Print Area</div>
+      <div class="step"><span class="step-num">6</span> อาร์ตเวิร์ก</div>
+      <div class="step"><span class="step-num">7</span> Mockup</div>
+      <div class="step"><span class="step-num">8</span> เนื้อหา</div>
+      <div class="step"><span class="step-num">9</span> ราคา</div>
+      <div class="step"><span class="step-num">10</span> สรุป</div>
     </div>
 
     <!-- Loading bar -->
@@ -530,40 +534,99 @@
       <div id="variantList" class="grid-2"></div>
     </div>
 
-    <!-- Step 5: Artwork + AI Design -->
+    <!-- Step 5: Print Info -->
+    <div class="card hidden" id="step-printinfo">
+      <h2>📐 พื้นที่พิมพ์</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">ข้อมูล Print Area จาก Printful</p>
+      <div id="printInfoContent"></div>
+      <button class="btn btn-primary btn-block" onclick="goToArtwork()" style="margin-top:16px;">👉 ไปออกแบบลวดลาย</button>
+    </div>
+
+    <!-- Step 6: Artwork + AI Design -->
     <div class="card hidden" id="step-artwork">
-      <h2>🎭 ออกแบบลวดลาย</h2>
+      <h2>🎨 สร้าง Artwork</h2>
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">AI ออกแบบลายให้อัตโนมัติ หรือใส่ URL รูปของคุณเอง</p>
       <div id="designPreview" class="preview-area" style="min-height:280px;margin-bottom:12px;">
         <div class="preview-placeholder" id="designPlaceholder">
           <span class="emoji">🎨</span>
           <p>กำลังสร้างลายด้วย AI...</p>
         </div>
-        <img id="designImage" src="" alt="Design Preview" style="display:none;width:100%;max-width:400px;margin:0 auto;border:var(--pixel-size) solid var(--border-color);border-radius:8px;" />
+        <img id="designImage" src="" alt="Design Preview" style="display:none;width:100%;max-width:400px;margin:0 auto;border:var(--pixel-size) solid var(--border-color);" />
       </div>
       <div class="grid-2" style="margin-bottom:12px;">
         <button class="btn btn-primary" onclick="generateDesign()" id="genDesignBtn">🎨 สร้างลายใหม่</button>
         <button class="btn btn-secondary" onclick="toggleUrlInput()">🔗 ใช้ URL ของฉัน</button>
       </div>
       <div class="form-group" id="urlInputGroup" style="display:none;">
-        <label>URL รูปภาพ (ไม่บังคับ)</label>
+        <label>URL รูปภาพ</label>
         <input type="text" id="artworkUrl" placeholder="https://example.com/design.png" />
       </div>
-      <button class="btn btn-primary btn-block" onclick="generateMockup()">✨ สร้าง Mockup</button>
+      <button class="btn btn-primary btn-block" onclick="goToMockup()">✨ ถัดไป: สร้าง Mockup</button>
     </div>
 
-    <!-- Step 6: Result -->
-    <div class="card hidden" id="step-result">
-      <h2>🏆 Mockup สำเร็จ</h2>
-      <div class="preview-area" id="mockupPreview">
-        <div class="preview-placeholder">
+    <!-- Step 7: Mockup -->
+    <div class="card hidden" id="step-mockup">
+      <h2>✨ สร้าง Mockup</h2>
+      <div id="mockupPreview" class="preview-area" style="min-height:300px;">
+        <div class="preview-placeholder" id="mockupPlaceholder">
           <span class="emoji">🖼️</span>
-          <p>รอผลลัพธ์...</p>
+          <p>กดปุ่มด้านล่างเพื่อสร้าง Mockup</p>
+        </div>
+        <img id="mockupImage" src="" alt="Mockup" style="display:none;max-height:400px;" />
+      </div>
+      <button class="btn btn-primary btn-block" id="genMockupBtn" onclick="generateMockup()">⚡ สร้าง Mockup</button>
+      <button class="btn btn-primary btn-block" id="nextToContent" onclick="goToContent()" style="display:none;margin-top:8px;">👉 ถัดไป: สร้างคำอธิบาย</button>
+    </div>
+
+    <!-- Step 8: Content -->
+    <div class="card hidden" id="step-content">
+      <h2>✍️ สร้างคำอธิบาย</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">AI สร้างชื่อ + คำอธิบาย + Tags ให้อัตโนมัติ</p>
+      <div class="form-group">
+        <label>ชื่อสินค้า</label>
+        <input type="text" id="contentTitle" placeholder="ชื่อสินค้า" />
+      </div>
+      <div class="form-group">
+        <label>คำอธิบาย</label>
+        <textarea id="contentDesc" rows="4" placeholder="คำอธิบายสินค้า"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tags</label>
+        <input type="text" id="contentTags" placeholder="tag1, tag2, tag3" />
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn btn-primary" onclick="generateContent()" id="genContentBtn">🤖 AI สร้างเนื้อหา</button>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="goToPricing()">👉 ถัดไป: ตั้งราคา</button>
+    </div>
+
+    <!-- Step 9: Pricing -->
+    <div class="card hidden" id="step-pricing">
+      <h2>💰 ตั้งราคา</h2>
+      <div id="pricingContent">
+        <div class="form-group">
+          <label>ต้นทุน (Cost)</label>
+          <input type="text" id="pricingCost" readonly style="opacity:0.6;" />
+        </div>
+        <div class="form-group">
+          <label>ราคาขาย (Price)</label>
+          <input type="text" id="pricingPrice" placeholder="฿0.00" />
+        </div>
+        <div class="form-group">
+          <label>กำไร (Profit)</label>
+          <input type="text" id="pricingProfit" readonly style="opacity:0.6;" />
         </div>
       </div>
-      <div class="grid-2">
-        <button class="btn btn-primary btn-block" id="downloadBtn" onclick="downloadMockup()" disabled>⬇️ ดาวน์โหลด</button>
-        <button class="btn btn-secondary btn-block" onclick="resetWizard()">🔄 เริ่มใหม่</button>
+      <button class="btn btn-primary btn-block" onclick="goToSummary()">👉 ถัดไป: สรุป</button>
+    </div>
+
+    <!-- Step 10: Summary -->
+    <div class="card hidden" id="step-summary">
+      <h2>✅ สรุป + Checklist</h2>
+      <div id="summaryContent"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="btn btn-primary" onclick="downloadMockup()" id="dlBtn" disabled>⬇️ ดาวน์โหลด</button>
+        <button class="btn btn-secondary" onclick="resetWizard()">🔄 เริ่มใหม่</button>
       </div>
     </div>
 
@@ -579,14 +642,19 @@
       category: null,
       product: null,
       variant: null,
+      printInfo: null,
       artworkUrl: null,
+      designUrl: null,
       mockupUrl: null,
       mockupId: null,
+      sessionId: null,
+      content: { title: '', desc: '', tags: '' },
+      pricing: { cost: 0, price: 0, profit: 0 },
       products: [],
       variants: []
     };
 
-    let steps = ['provider', 'category', 'product', 'variant', 'artwork', 'result'];
+    let steps = ['provider', 'category', 'product', 'variant', 'printinfo', 'artwork', 'mockup', 'content', 'pricing', 'summary'];
 
     // ── Toast ──
     let toastTimer;
@@ -624,8 +692,13 @@
     }
 
     function resetWizard() {
-      state.provider = null; state.category = null; state.product = null;
-      state.variant = null; state.artworkUrl = null; state.mockupUrl = null;
+      Object.assign(state, {
+        provider: null, category: null, product: null,
+        variant: null, printInfo: null, artworkUrl: null,
+        designUrl: null, mockupUrl: null, mockupId: null,
+        sessionId: null, content: { title: '', desc: '', tags: '' },
+        pricing: { cost: 0, price: 0, profit: 0 }
+      });
       document.getElementById('artworkUrl').value = '';
       showStep('provider');
       setStatus('🟢 พร้อมทำงาน — เลือก Provider เพื่อเริ่มต้น', 'idle');
@@ -778,10 +851,52 @@
       toast('✅ เลือก: ' + state.variant.name, 'success');
       state.designUrl = '';
       state.artworkUrl = '';
+      loadPrintInfo();
+    }
+
+    // ── Print Info ──
+    async function loadPrintInfo() {
+      setStatus('📐 กำลังโหลดข้อมูลพื้นที่พิมพ์...', 'loading');
+      setProgress(50);
+      try {
+        const r = await fetch('/api/pod/print-info/' + state.product.id);
+        const data = await r.json();
+        state.printInfo = data.result || {};
+        renderPrintInfo();
+        showStep('printinfo');
+        setStatus('📐 ข้อมูลพื้นที่พิมพ์พร้อม', 'idle');
+        setProgress(50);
+      } catch (e) {
+        toast('⚠️ ไม่พบข้อมูล print info — ข้าม', 'error');
+        goToArtwork();
+      }
+    }
+
+    function renderPrintInfo() {
+      const el = document.getElementById('printInfoContent');
+      const info = state.printInfo;
+      if (!info || !info.placements) {
+        el.innerHTML = '<p style="color:var(--text-dim);">ไม่มีข้อมูล Print Area</p>';
+        return;
+      }
+      let html = '<table class="info-table"><tbody>';
+      html += `<tr><td>สินค้า</td><td>${info.product_name || state.product?.name || '-'}</td></tr>`;
+      if (info.placements) {
+        info.placements.forEach(p => {
+          html += `<tr><td>${p.name || p.placement || '-'}</td><td>${p.width || '-'} × ${p.height || '-'} px</td></tr>`;
+        });
+      }
+      if (info.recommended_size) {
+        html += `<tr><td>แนะนำ</td><td>${info.recommended_size}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    }
+
+    function goToArtwork() {
       showStep('artwork');
       setStatus('🎨 กำลังสร้างลายด้วย AI...', 'loading');
-      setProgress(66);
-      // Auto-generate AI design
+      setProgress(55);
       generateDesign();
     }
 
@@ -836,22 +951,35 @@
       if (visible) document.getElementById('artworkUrl').focus();
     }
 
-    // ── Generate Mockup ──
-    async function generateMockup() {
+    function goToMockup() {
       const manualUrl = document.getElementById('artworkUrl').value.trim();
-      const designUrl = state.designUrl || '';
-
-      // Use manual URL if provided, else AI-generated design
-      const url = manualUrl || designUrl;
-      if (!url) {
-        toast('⚠️ กำลังสร้างลาย... รอสักครู่', 'error');
+      state.artworkUrl = manualUrl || state.designUrl || '';
+      if (!state.artworkUrl) {
+        toast('⚠️ ต้องมีรูปก่อนสร้าง Mockup', 'error');
         return;
       }
+      showStep('mockup');
+      setStatus('⚡ พร้อมสร้าง Mockup', 'idle');
+      setProgress(65);
+    }
 
-      state.artworkUrl = url;
+    // ── Generate Mockup ──
+    async function generateMockup() {
+      if (!state.artworkUrl) {
+        toast('⚠️ ไม่มีรูป artwork', 'error');
+        return;
+      }
+      const btn = document.getElementById('genMockupBtn');
+      const placeholder = document.getElementById('mockupPlaceholder');
+      const imgEl = document.getElementById('mockupImage');
+      const nextBtn = document.getElementById('nextToContent');
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังสร้าง...';
+      placeholder.style.display = 'flex';
+      imgEl.style.display = 'none';
+      nextBtn.style.display = 'none';
       setStatus('⚡ กำลังสร้าง Mockup...', 'loading');
-      setProgress(83);
-      document.getElementById('downloadBtn').disabled = true;
+      setProgress(70);
 
       try {
         const r = await fetch('/api/pod/mockup', {
@@ -861,17 +989,16 @@
             product_id: parseInt(state.product.id),
             variant_ids: [parseInt(state.variant.id)],
             format: 'jpg',
-            files: [{ placement: 'front', image_url: url }]
+            files: [{ placement: 'front', image_url: state.artworkUrl }]
           })
         });
         const data = await r.json();
         const taskKey = data.result?.task_key;
         if (!taskKey) throw new Error('No task key');
 
-        // Poll for result
         let attempts = 0;
         while (attempts < 20) {
-          await new Promise(r => setTimeout(r, 2000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
           const r2 = await fetch('/api/pod/mockup/status/' + taskKey);
           const d2 = await r2.json();
           if (d2.result?.status === 'completed') {
@@ -881,11 +1008,16 @@
               if (mUrl) {
                 state.mockupUrl = mUrl;
                 state.mockupId = taskKey;
-                document.getElementById('mockupPreview').innerHTML = `<img src="${mUrl}" alt="Mockup" />`;
-                document.getElementById('downloadBtn').disabled = false;
-                showStep('result');
-                setStatus('✅ Mockup พร้อม! กดดาวน์โหลดได้เลย', 'success');
-                setProgress(100);
+                imgEl.src = mUrl;
+                imgEl.onload = function() {
+                  placeholder.style.display = 'none';
+                  imgEl.style.display = 'block';
+                };
+                btn.textContent = '🔄 สร้างใหม่';
+                btn.disabled = false;
+                nextBtn.style.display = 'block';
+                setStatus('✅ Mockup สำเร็จ!', 'success');
+                setProgress(75);
                 toast('🎉 Mockup สำเร็จ!', 'success');
                 return;
               }
@@ -893,20 +1025,103 @@
           }
           attempts++;
         }
-        throw new Error('Timeout — Mockup ใช้เวลานานเกินไป');
+        throw new Error('Timeout');
       } catch (e) {
-        // Fallback to Printful direct mockup URL
-        const fallbackUrl = `https://www.printful.com/api/mockup/product/${state.product.id}`;
-        document.getElementById('mockupPreview').innerHTML =
-          `<div style="padding:32px;text-align:center;">
-            <p>⚠️ ${e.message}</p>
-            <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">ระบบกำลังใช้ Mockup แบบตรง</p>
-          </div>`;
-        showStep('result');
-        setStatus('✅ Mockup สร้างเสร็จ (mode: fallback)', 'success');
-        setProgress(100);
-        toast('⚡ Mockup พร้อม (fallback mode)', 'success');
+        placeholder.innerHTML = '<span class="emoji">⚠️</span><p>' + e.message + '</p>';
+        btn.textContent = '⚡ ลองใหม่';
+        btn.disabled = false;
+        setStatus('❌ Mockup ไม่สำเร็จ', 'error');
       }
+    }
+
+    // ── Content Generation ──
+    function goToContent() {
+      showStep('content');
+      setStatus('✍️ สร้างคำอธิบายสินค้า', 'idle');
+      setProgress(80);
+    }
+
+    async function generateContent() {
+      const btn = document.getElementById('genContentBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังสร้าง...';
+      setStatus('🤖 AI กำลังสร้างเนื้อหา...', 'loading');
+
+      try {
+        const r = await fetch('/api/ai/generate-listing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_name: state.product?.name || '',
+            category: state.category?.name || '',
+            variant: state.variant?.name || ''
+          })
+        });
+        const data = await r.json();
+        const result = data.result || data;
+        document.getElementById('contentTitle').value = result.title || '';
+        document.getElementById('contentDesc').value = result.description || '';
+        document.getElementById('contentTags').value = (result.tags || []).join(', ');
+        state.content = {
+          title: result.title || '',
+          desc: result.description || '',
+          tags: (result.tags || []).join(', ')
+        };
+        toast('✅ AI สร้างเนื้อหาเสร็จ!', 'success');
+      } catch (e) {
+        toast('⚠️ สร้างเนื้อหาไม่สำเร็จ — ใส่เอง', 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = '🤖 AI สร้างเนื้อหา';
+      setStatus('✍️ แก้ไขเนื้อหาได้ตามต้องการ', 'idle');
+    }
+
+    // ── Pricing ──
+    function goToPricing() {
+      state.content.title = document.getElementById('contentTitle').value;
+      state.content.desc = document.getElementById('contentDesc').value;
+      state.content.tags = document.getElementById('contentTags').value;
+      showStep('pricing');
+      setStatus('💰 ตั้งราคาสินค้า', 'idle');
+      setProgress(85);
+      // Try to get cost from backend
+      document.getElementById('pricingCost').value = '฿0.00 ( Printful )';
+      document.getElementById('pricingPrice').value = '';
+      document.getElementById('pricingProfit').value = '฿0.00';
+      document.getElementById('pricingPrice').addEventListener('input', function() {
+        const price = parseFloat(this.value.replace(/[^0-9.]/g, '')) || 0;
+        const cost = 0;
+        document.getElementById('pricingProfit').value = '฿' + (price - cost).toFixed(2);
+      });
+    }
+
+    // ── Summary ──
+    function goToSummary() {
+      state.pricing.price = parseFloat(document.getElementById('pricingPrice').value.replace(/[^0-9.]/g, '')) || 0;
+      showStep('summary');
+      setStatus('✅ สรุปก่อน publish', 'idle');
+      setProgress(95);
+      renderSummary();
+    }
+
+    function renderSummary() {
+      const el = document.getElementById('summaryContent');
+      el.innerHTML = `
+        <table class="info-table">
+          <tbody>
+            <tr><td>Provider</td><td>${state.provider || '-'}</td></tr>
+            <tr><td>หมวดหมู่</td><td>${state.category?.name || '-'}</td></tr>
+            <tr><td>สินค้า</td><td>${state.product?.name || '-'}</td></tr>
+            <tr><td>Variant</td><td>${state.variant?.name || '-'}</td></tr>
+            <tr><td>Artwork</td><td>${state.artworkUrl ? '✅' : '❌'}</td></tr>
+            <tr><td>Mockup</td><td>${state.mockupUrl ? '✅' : '❌'}</td></tr>
+            <tr><td>ชื่อสินค้า</td><td>${state.content.title || '-'}</td></tr>
+            <tr><td>ราคา</td><td>฿${state.pricing.price || 0}</td></tr>
+          </tbody>
+        </table>
+        ${state.mockupUrl ? '<div style="text-align:center;margin-top:16px;"><img src="' + state.mockupUrl + '" style="max-width:300px;border:var(--pixel-size) solid var(--border-color);" /></div>' : ''}
+      `;
+      document.getElementById('dlBtn').disabled = !state.mockupUrl;
     }
 
     function downloadMockup() {
