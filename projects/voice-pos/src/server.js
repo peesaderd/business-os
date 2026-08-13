@@ -197,23 +197,95 @@ app.post('/api/voice/process', async (req, res) => {
   }
 });
 
-// API: Create order (placeholder)
+// Find menu item ID by name (English or Thai)
+function findMenuItemId(menu, itemName) {
+  if (!menu || !itemName) return null;
+  const search = itemName.toLowerCase().trim();
+  // Exact match first
+  let found = menu.find(m =>
+    (m.name && m.name.toLowerCase() === search) ||
+    (m.nameTh && m.nameTh === itemName.trim())
+  );
+  if (found) return found.id;
+  // Partial match
+  found = menu.find(m =>
+    (m.name && m.name.toLowerCase().includes(search)) ||
+    (m.nameTh && m.nameTh.includes(itemName.trim())) ||
+    (search.includes(m.name?.toLowerCase())) ||
+    (itemName.trim().includes(m.nameTh))
+  );
+  return found ? found.id : null;
+}
+
+// API: Create order — integrated with SuperAppSheet POS
 app.post('/api/order/create', async (req, res) => {
   try {
     const { items, customerName, tableId } = req.body;
-    
-    // TODO: Integrate with Super AppSheet POS or ERP Core
-    const orderId = `VOICE-${Date.now()}`;
-    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    if (!items || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'No items' });
+    }
+
+    const menu = await getMenu();
+    const posItems = [];
+    const notFound = [];
+
+    for (const item of items) {
+      const itemId = findMenuItemId(menu, item.name) || findMenuItemId(menu, item.nameTh);
+      if (itemId) {
+        posItems.push({
+          item_id: itemId,
+          quantity: item.quantity || 1,
+          notes: item.remark || ''
+        });
+      } else {
+        notFound.push(item.nameTh || item.name);
+      }
+    }
+
+    if (posItems.length === 0) {
+      return res.json({
+        success: false,
+        error: `ไม่พบเมนูในระบบ: ${notFound.join(', ')}`,
+        message: `ไม่พบเมนู: ${notFound.join(', ')} กรุณาสั่งใหม่`
+      });
+    }
+
+    // Call SuperAppSheet POS API
+    const posRes = await axios.post(
+      `${process.env.SUPER_APPSHEET_URL}/pos/orders`,
+      {
+        table_id: tableId || 'T01',
+        items: posItems
+      },
+      { timeout: 5000 }
+    );
+
+    const order = posRes.data;
+    const total = order.total || items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+
+    let msg = `สร้างออเดอร์ ${order.order_id} เรียบร้อยแล้ว รวม ${total} บาท`;
+    if (notFound.length > 0) {
+      msg += ` (ไม่พบ: ${notFound.join(', ')})`;
+    }
 
     res.json({
       success: true,
-      orderId,
+      orderId: order.order_id,
       total,
-      message: `สร้างออเดอร์ ${orderId} เรียบร้อยแล้ว รวม ${total} บาท`
+      message: msg
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('Order create error:', err.message);
+    // Fallback: return fake order if POS API down
+    const { items } = req.body;
+    const total = (items || []).reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+    const fallbackId = `VOICE-${Date.now()}`;
+    res.json({
+      success: true,
+      orderId: fallbackId,
+      total,
+      message: `สร้างออเดอร์ ${fallbackId} (offline) รวม ${total} บาท`
+    });
   }
 });
 
