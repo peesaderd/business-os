@@ -7,6 +7,8 @@ LINE Bot สำหรับเช็คสลิปโอนเงินแล�
 - 💰 ดึงข้อมูลจำนวนเงิน, ธนาคาร, ชื่อผู้โอน
 - 🔔 แจ้ง Admin ทันทีเมื่อมีสลิปใหม่
 - 📱 ใช้ pyzbar (QR decode) + Tesseract (OCR Thai)
+- ✅ Auto-approve เมื่อ verification score >= 80%
+- 📦 Order database (SQLite) สำหรับเก็บสถานะ
 
 ## Setup
 
@@ -41,7 +43,19 @@ python3 bot_server.py
 ## Usage
 1. ส่งรูปสลิปมาที่ Bot
 2. ระบบเช็คสลิปอัตโนมัติ
-3. ตอบลูกค้า + แจ้ง Admin
+3. Auto-approve 如果 score >= 80%
+4. ตอบลูกค้า + แจ้ง Admin
+
+## Auto-Approve Flow
+```
+ลูกค้าส่งสลิป → Auto-Verify → Score >= 80%?
+                                    ↓ YES         ↓ NO
+                              Auto-Approve    ขอให้ลูกค้ายืนยัน
+                                    ↓
+                              Update order → PAID
+                                    ↓
+                              แจ้งลูกค้า + Admin
+```
 
 ## Port
 - Default: 8110
