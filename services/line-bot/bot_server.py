@@ -23,6 +23,7 @@ from linebot.models import (
 # Add parent dir for slip_checker import
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from slip_checker import check_slip
+from order_db import create_order, get_order, update_order_status, log_slip, get_order_stats
 
 app = Flask(__name__)
 
@@ -327,7 +328,63 @@ def handle_image(event):
             for w in warnings:
                 lines.append(f"• {w}")
         
-        lines.append(f"\n✅ ยืนยันการโอนเงินจริง โดยพิมพ์ 'ยืนยัน'")
+        # Auto-approve if score >= 80%
+        if score_pct >= 80:
+            # Generate order ID
+            order_id = f"ORD-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            
+            # Create order in database
+            create_order(
+                order_id=order_id,
+                customer_id=user_id,
+                amount=summary.get("amount", 0),
+                customer_name=summary.get("sender_name")
+            )
+            
+            # Auto-approve
+            update_order_status(order_id, "paid", result)
+            
+            # Log slip
+            log_slip(
+                order_id=order_id,
+                user_id=user_id,
+                slip_image=tmp_path,
+                qr_data=result.get("qr"),
+                ocr_data=result.get("ocr"),
+                verification_score=score_pct,
+                verification_status=status,
+                action="auto_approved"
+            )
+            
+            lines.append(f"\n✅ ชำระเงินสำเร็จ! ออเดอร์ #{order_id}")
+            lines.append(f"📦 สถานะ: PAID")
+            
+            # Notify admin with auto-approve
+            admin_id = state.get("admin_user_id")
+            if admin_id:
+                auto_text = (
+                    f"🤖 Auto-Approve ออเดอร์ #{order_id}\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"💰 จำนวนเงิน: ฿{summary.get('amount', 'N/A')}\n"
+                    f"👤 ผู้โอน: {summary.get('sender_name', 'N/A')}\n"
+                    f"🏦 ธนาคาร: {summary.get('sender_bank', 'N/A')}\n"
+                    f"📊 คะแนน: {score_pct:.0f}%\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"✅ สถานะ: PAID (Auto-Approved)"
+                )
+                line_bot_api.push_message(admin_id, TextSendMessage(text=auto_text))
+        else:
+            # Low score — ask for confirmation
+            lines.append(f"\n⚠️ คะแนนต่ำ กรุณายืนยันโดยพิมพ์ 'ยืนยัน'")
+            
+            # Store pending verification
+            state["pending_verification"] = {
+                "user_id": user_id,
+                "slip_data": result,
+                "status": status,
+                "score_pct": score_pct
+            }
+            save_state(state)
 
         response_text = "\n".join(lines)
 
@@ -336,15 +393,6 @@ def handle_image(event):
             event.reply_token,
             TextSendMessage(text=response_text)
         )
-        
-        # Store pending verification
-        state["pending_verification"] = {
-            "user_id": user_id,
-            "slip_data": result,
-            "status": status,
-            "score_pct": score_pct
-        }
-        save_state(state)
 
         # Notify admin
         notify_admin_with_slip(result, user_id)
