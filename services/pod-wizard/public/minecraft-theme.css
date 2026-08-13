@@ -1,0 +1,531 @@
+/*
+ * 🎮 MINECRAFT THEME — Shared Design System
+ * Pixel-art inspired dark theme for m2igen.com
+ * Version: 2026-08-13
+ */
+
+@font-face {
+  font-family: 'Minecraft';
+  src: local('Minecraft'), local('Minecraftia'), local('Courier New');
+}
+
+:root {
+  /* Core Colors */
+  --mc-bg: #1a1a2e;
+  --mc-bg-card: #16213e;
+  --mc-bg-hover: #0f3460;
+  --mc-accent: #e94560;
+  --mc-accent2: #f5a623;
+  --mc-text: #e0e0e0;
+  --mc-text-dim: #8892b0;
+  --mc-green: #4ade80;
+  --mc-red: #f87171;
+  --mc-blue: #60a5fa;
+  --mc-purple: #a78bfa;
+  --mc-border: #3a3a5e;
+  --mc-pixel: 2px;
+
+  /* Legacy aliases for migration */
+  --bg: var(--mc-bg);
+  --bg-card: var(--mc-bg-card);
+  --bg-hover: var(--mc-bg-hover);
+  --accent: var(--mc-accent);
+  --accent2: var(--mc-accent2);
+  --text: var(--mc-text);
+  --text-dim: var(--mc-text-dim);
+  --green: var(--mc-green);
+  --border-color: var(--mc-border);
+  --pixel-size: var(--mc-pixel);
+}
+
+/* ── Body ─────────────────────────────────────────────────── */
+body.mc-theme {
+  font-family: 'Minecraft', 'Courier New', monospace;
+  background: var(--mc-bg);
+  color: var(--mc-text);
+  min-height: 100vh;
+  background-image:
+    linear-gradient(45deg, #1a1a2e 25%, transparent 25%),
+    linear-gradient(-45deg, #1a1a2e 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1a1a2e 75%),
+    linear-gradient(-45deg, transparent 75%, #1a1a2e 75%);
+  background-size: 40px 40px;
+  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+.mc-theme ::-webkit-scrollbar { width: 8px; }
+.mc-theme ::-webkit-scrollbar-track { background: var(--mc-bg); }
+.mc-theme ::-webkit-scrollbar-thumb { background: var(--mc-border); border-radius: 4px; }
+
+/* ── Header ───────────────────────────────────────────────── */
+.mc-header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-bottom: var(--mc-pixel) solid var(--mc-border);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.mc-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  text-shadow: 2px 2px 0 #000;
+  color: #fff;
+}
+
+.mc-header .mc-accent { color: var(--mc-accent); }
+.mc-header .mc-accent2 { color: var(--mc-accent2); }
+
+/* ── Minecraft Icon Box ───────────────────────────────────── */
+.mc-icon-box {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  border: var(--mc-pixel) solid var(--mc-border);
+  background: #2a2a4e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+/* ── Container ────────────────────────────────────────────── */
+.mc-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.mc-container-wide {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* ── Cards ────────────────────────────────────────────────── */
+.mc-card {
+  background: var(--mc-bg-card);
+  border: var(--mc-pixel) solid var(--mc-border);
+  padding: 24px;
+  margin-bottom: 20px;
+  position: relative;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+}
+
+.mc-card h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  color: var(--mc-accent2);
+  text-transform: uppercase;
+  font-weight: 700;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* ── Buttons — Minecraft Style ────────────────────────────── */
+.mc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  border: var(--mc-pixel) solid #000;
+  cursor: pointer;
+  transition: all 0.1s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  color: #fff;
+  background: #7c7c7c;
+  box-shadow:
+    inset 0 4px 0 rgba(255,255,255,0.2),
+    inset 0 -4px 0 rgba(0,0,0,0.2),
+    4px 4px 0 rgba(0,0,0,0.3);
+  min-height: 44px;
+}
+
+.mc-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow:
+    inset 0 4px 0 rgba(255,255,255,0.1),
+    inset 0 -4px 0 rgba(0,0,0,0.3),
+    2px 2px 0 rgba(0,0,0,0.3);
+}
+
+.mc-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mc-btn-primary {
+  background: #2d7d2d;
+  box-shadow:
+    inset 0 4px 0 rgba(255,255,255,0.3),
+    inset 0 -4px 0 rgba(0,0,0,0.3),
+    4px 4px 0 rgba(0,0,0,0.3);
+}
+
+.mc-btn-accent {
+  background: var(--mc-accent);
+  box-shadow:
+    inset 0 4px 0 rgba(255,255,255,0.3),
+    inset 0 -4px 0 rgba(0,0,0,0.2),
+    4px 4px 0 rgba(0,0,0,0.3);
+}
+
+.mc-btn-secondary {
+  background: #4a4a6a;
+  box-shadow:
+    inset 0 4px 0 rgba(255,255,255,0.15),
+    inset 0 -4px 0 rgba(0,0,0,0.2),
+    4px 4px 0 rgba(0,0,0,0.3);
+}
+
+.mc-btn-block { width: 100%; }
+
+.mc-btn-sm {
+  padding: 8px 16px;
+  font-size: 12px;
+  min-height: 32px;
+}
+
+/* ── Form Elements ────────────────────────────────────────── */
+.mc-select, .mc-input, .mc-textarea {
+  width: 100%;
+  padding: 12px;
+  background: #0d1117;
+  border: var(--mc-pixel) solid var(--mc-border);
+  color: var(--mc-text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.mc-select:focus, .mc-input:focus, .mc-textarea:focus {
+  border-color: var(--mc-accent);
+}
+
+.mc-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23e0e0e0' fill='none' stroke-width='2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.mc-label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--mc-text-dim);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.mc-form-group {
+  margin-bottom: 16px;
+}
+
+/* ── Grid ─────────────────────────────────────────────────── */
+.mc-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.mc-grid-2 { grid-template-columns: 1fr 1fr; }
+.mc-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.mc-grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+@media (max-width: 640px) {
+  .mc-grid-2, .mc-grid-3, .mc-grid-4 { grid-template-columns: 1fr; }
+}
+
+/* ── Step Indicators ──────────────────────────────────────── */
+.mc-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.mc-step {
+  flex: 1;
+  min-width: 80px;
+  text-align: center;
+  padding: 10px 8px;
+  background: rgba(255,255,255,0.05);
+  border: var(--mc-pixel) solid var(--mc-border);
+  font-size: 11px;
+  color: var(--mc-text-dim);
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.3s;
+}
+
+.mc-step.active {
+  background: rgba(233,69,96,0.15);
+  border-color: var(--mc-accent);
+  color: #fff;
+}
+
+.mc-step.completed {
+  background: rgba(74,222,128,0.1);
+  border-color: var(--mc-green);
+  color: var(--mc-green);
+}
+
+.mc-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 0;
+  border: var(--mc-pixel) solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* ── Preview Area ─────────────────────────────────────────── */
+.mc-preview {
+  min-height: 200px;
+  background: #0d1117;
+  border: var(--mc-pixel) solid var(--mc-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.mc-preview img {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.mc-preview-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--mc-text-dim);
+}
+
+.mc-preview-empty .emoji {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+/* ── Status Bar ───────────────────────────────────────────── */
+.mc-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.3);
+  border: var(--mc-pixel) solid var(--mc-border);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.mc-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 0;
+}
+
+.mc-status-dot.idle { background: #555; }
+.mc-status-dot.loading { background: var(--mc-accent2); animation: mc-blink 0.8s infinite; }
+.mc-status-dot.success { background: var(--mc-green); }
+.mc-status-dot.error { background: var(--mc-accent); }
+
+@keyframes mc-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Progress Bar ─────────────────────────────────────────── */
+.mc-progress {
+  height: 4px;
+  background: var(--mc-border);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.mc-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--mc-accent), var(--mc-accent2));
+  transition: width 0.5s;
+}
+
+/* ── Toast ────────────────────────────────────────────────── */
+.mc-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0d1117;
+  border: var(--mc-pixel) solid var(--mc-border);
+  padding: 12px 20px;
+  font-size: 14px;
+  z-index: 9999;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s;
+  max-width: 360px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+}
+
+.mc-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.mc-toast.success { border-left: 3px solid var(--mc-green); }
+.mc-toast.error { border-left: 3px solid var(--mc-accent); }
+
+/* ── Info Table ───────────────────────────────────────────── */
+.mc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.mc-table td {
+  padding: 8px 12px;
+  border-bottom: var(--mc-pixel) solid rgba(255,255,255,0.05);
+}
+
+.mc-table td:first-child {
+  color: var(--mc-text-dim);
+  font-weight: 600;
+  width: 40%;
+}
+
+/* ── Spinner ──────────────────────────────────────────────── */
+.mc-spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  background:
+    linear-gradient(0deg, transparent 48%, var(--mc-accent2) 48%, var(--mc-accent2) 52%, transparent 52%),
+    linear-gradient(90deg, transparent 48%, var(--mc-accent2) 48%, var(--mc-accent2) 52%, transparent 52%);
+  animation: mc-spin 1s steps(8) infinite;
+}
+
+@keyframes mc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.mc-hero {
+  text-align: center;
+  padding: 32px 16px;
+  margin-bottom: 8px;
+}
+
+.mc-hero .big-icon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+
+.mc-hero p {
+  color: var(--mc-text-dim);
+  font-size: 16px;
+  margin-top: 8px;
+}
+
+/* ── Badges ───────────────────────────────────────────────── */
+.mc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: var(--mc-pixel) solid;
+  text-transform: uppercase;
+}
+
+.mc-badge-green { color: var(--mc-green); border-color: var(--mc-green); background: rgba(74,222,128,0.1); }
+.mc-badge-red { color: var(--mc-accent); border-color: var(--mc-accent); background: rgba(233,69,96,0.1); }
+.mc-badge-yellow { color: var(--mc-accent2); border-color: var(--mc-accent2); background: rgba(245,166,35,0.1); }
+.mc-badge-blue { color: var(--mc-blue); border-color: var(--mc-blue); background: rgba(96,165,250,0.1); }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .mc-header h1 { font-size: 18px; }
+  .mc-step { min-width: 60px; font-size: 10px; padding: 8px 4px; }
+  .mc-container { padding: 16px 12px; }
+}
+
+/* ── Hidden utility ───────────────────────────────────────── */
+.mc-hidden { display: none !important; }
+
+/* ── Tag list ─────────────────────────────────────────────── */
+.mc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--mc-border);
+  color: var(--mc-text-dim);
+}
+
+/* ── Divider ──────────────────────────────────────────────── */
+.mc-divider {
+  border: none;
+  border-top: var(--mc-pixel) solid var(--mc-border);
+  margin: 16px 0;
+}
+
+/* ── Stat Card ────────────────────────────────────────────── */
+.mc-stat {
+  background: var(--mc-bg-card);
+  border: var(--mc-pixel) solid var(--mc-border);
+  padding: 16px;
+  text-align: center;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+}
+
+.mc-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--mc-accent2);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.mc-stat-label {
+  font-size: 12px;
+  color: var(--mc-text-dim);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
