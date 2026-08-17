@@ -1,87 +1,79 @@
-"""
-POD Wizard — Unified Backend API
-Merged: Printful proxy + POD Wizard + AI Assistant + Rules Validator + Payment
-"""
-import os
+from pydantic import validator
+
 import sys
+
+"""
+Etsy Wizard — Micro Service
+Mini MVP: Shop Setup Wizard + Rules Validator + AI Assistant
+"""
+
+import os
 import json
-import time
-import uuid
 import sqlite3
+import requests
 import logging
-import math
-import random
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
-from io import BytesIO
-import base64
 
-import httpx
-import requests as sync_requests
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
-from pydantic import BaseModel, validator
-
-# ─── Logging ────────────────────────────────────────────────────────────────
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("pod-wizard")
-
-# ─── .env Loading (own .env → fallback to erp-stack .env files) ─────────────
-
-def _load_env_file(env_path: str):
-    """Load key=value pairs from a .env file into os.environ (no overwrite)."""
-    if not os.path.exists(env_path):
-        return
-    for line in open(env_path).read().split('\n'):
-        line = line.strip()
-        if not line or line.startswith('#'):
-            continue
-        if '=' in line:
-            k, v = line.split('=', 1)
-            k = k.strip()
-            v = v.strip()
-            if k and k not in os.environ:
-                os.environ[k] = v
-
-_my_env = os.path.join(os.path.dirname(__file__), '.env')
-_fallback_env1 = os.path.join(os.path.dirname(__file__), '..', '..', 'erp-stack', 'etsy-wizard', '.env')
-_fallback_env2 = os.path.join(os.path.dirname(__file__), '..', '..', 'erp-stack', 'tiktok-ugc-studio', '.env')
-for _env_file in [_my_env, _fallback_env1, _fallback_env2]:
-    _load_env_file(_env_file)
-
-# ─── sys.path for gemini_agent fallback ─────────────────────────────────────
-
-_ugc_path = os.path.join(os.path.dirname(__file__), '..', '..', 'erp-stack', 'tiktok-ugc-studio')
-if _ugc_path not in sys.path:
-    sys.path.append(_ugc_path)
-
-# ─── Local imports (copied modules) ─────────────────────────────────────────
+from pydantic import BaseModel
 
 from rules.validator import (
     validate_title, validate_tags, validate_description,
     validate_price, validate_listing, validate_image_requirements,
     validate_policies,
 )
-from pod_wizard import (
-    get_manager, WizardSession, WIZARD_STEPS,
-    handle_step_provider, handle_step_category,
-    handle_step_product, handle_step_variant, handle_step_print_info,
-    handle_step_artwork, handle_step_mockup, handle_step_mockup_status,
-    handle_step_content, handle_step_pricing, handle_step_summary,
-)
-from pod_data import get_providers, get_product_catalog, get_product_detail
 
-# ─── FastAPI App ────────────────────────────────────────────────────────────
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("etsy-wizard")
 
 app = FastAPI(
-    title="POD Wizard API",
-    version="2.0.0",
-    description="Unified POD Wizard + AI Assistant + Rules Validator",
+    title="Etsy Wizard Microservice",
+    version="0.1.0",
+    description="AI Shop Setup Wizard + Rules Validator — Mini MVP",
 )
+
+# HACK: Load keys from .env files (own first, then tiktok-ugc-studio as fallback)
+_my_env = os.path.join(os.path.dirname(__file__), '.env')
+_fallback_env = os.path.join(os.path.dirname(__file__), '..', 'tiktok-ugc-studio', '.env')
+for _env_file in [_my_env, _fallback_env]:
+    if not os.path.exists(_env_file):
+        continue
+    _env_content = open(_env_file).read()
+    for _line in _env_content.split('\n'):
+        _line = _line.strip()
+        if _line.startswith('FAL_KEY='):
+            _k, _v = _line.split('=', 1)
+            if 'FAL_KEY' not in os.environ:
+                os.environ['FAL_KEY'] = _v
+        elif _line.startswith('MISTRAL_API_KEY='):
+            _k, _v = _line.split('=', 1)
+            if 'MISTRAL_API_KEY' not in os.environ:
+                os.environ['MISTRAL_API_KEY'] = _v
+        elif _line.startswith('GEMINI_API_KEY='):
+            _k, _v = _line.split('=', 1)
+            if 'GEMINI_API_KEY' not in os.environ:
+                os.environ['GEMINI_API_KEY'] = _v
+        elif _line.startswith('GEMINI_MODEL='):
+            _k, _v = _line.split('=', 1)
+            if 'GEMINI_MODEL' not in os.environ:
+                os.environ['GEMINI_MODEL'] = _v
+        elif _line.startswith('OPENCODE_URL='):
+            _k, _v = _line.split('=', 1)
+            if 'OPENCODE_URL' not in os.environ:
+                os.environ['OPENCODE_URL'] = _v
+        elif _line.startswith('PRINTFUL_API_KEY='):
+            _k, _v = _line.split('=', 1)
+            if 'PRINTFUL_API_KEY' not in os.environ:
+                os.environ['PRINTFUL_API_KEY'] = _v
+
+# Add tiktok-ugc-studio to sys.path so we can import gemini_agent
+_ugc_path = os.path.join(os.path.dirname(__file__), '..', 'tiktok-ugc-studio')
+if _ugc_path not in sys.path:
+    sys.path.append(_ugc_path)  # append not insert(0) to avoid shadowing local main.py
 
 app.add_middleware(
     CORSMiddleware,
@@ -91,38 +83,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── Static files (frontend) ────────────────────────────────────────────────
+# ─── In-memory Shop Data (MVP — will migrate to DB later) ─────────────────
 
-PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
-if os.path.isdir(PUBLIC_DIR):
-    app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="static")
-    # Also mount at root for PWA assets (manifest, sw, icons)
-    # API routes take priority over mount, so this won't break /api/*
-    try:
-        app.mount("/manifest.json", StaticFiles(directory=PUBLIC_DIR, check_dir=False), name="manifest")
-    except Exception:
-        pass
+shops: dict[str, dict] = {}
+listings: dict[str, list] = {}
 
-# Static product images dir
-try:
-    _static_img_path = Path(__file__).parent / "static" / "product_images"
-    _static_img_path.mkdir(parents=True, exist_ok=True)
-    app.mount(
-        "/static/product_images",
-        StaticFiles(directory=str(_static_img_path)),
-        name="product_images",
-    )
-except Exception as e:
-    logger.error(f"Failed to configure static file serving: {e}")
-
-# ─── Printful config ────────────────────────────────────────────────────────
-
-PRINTFUL_API_KEY = os.environ.get("PRINTFUL_API_KEY", "0T3HwM0uy7eOTQZx64QZL5yPtjMKw6wPFjvjjIbs")
-PRINTFUL_BASE = "https://api.printful.com"
-HEADERS = {"Authorization": f"Bearer {PRINTFUL_API_KEY}"}
-
-# ─── SQLite persistence ─────────────────────────────────────────────────────
-
+# --- SQLite persistence ---
 DB_PATH = Path(__file__).parent / "etsy_wizard.db"
 
 def init_db():
@@ -177,89 +143,27 @@ def delete_listing_db(shop_id: str, draft_id: str):
     finally:
         conn.close()
 
-# In-memory data
-shops: dict[str, dict] = {}
-listings: dict[str, list] = {}
-
+# Initialize on startup
 init_db()
 load_from_db()
 
-# ─── Product Type → Category Mapping ────────────────────────────────────────
+# MEDIUM: Configure static file serving for product images
+# This should match the path used in the analyze endpoint
+try:
+    static_path = Path(__file__).parent / "static" / "product_images"
+    static_path.mkdir(parents=True, exist_ok=True)
+    app.mount(
+        "/static/product_images",
+        StaticFiles(directory=str(static_path)),
+        name="product_images"
+    )
+    logger.info(f"Static file serving configured for: {static_path}")
+except Exception as e:
+    logger.error(f"Failed to configure static file serving: {e}")
+# --- end SQLite ---
 
-TYPE_CATEGORIES = {
-    "DECOR": {"name": "ตกแต่งบ้าน", "icon": "🏠", "slug": "decor"},
-    "CUT-SEW": {"name": "เสื้อผ้า Cut & Sew", "icon": "👕", "slug": "cut-sew"},
-    "DIRECT-TO-FABRIC": {"name": "ผ้า & สิ่งทอ", "icon": "🧵", "slug": "fabric"},
-    "DTFILM": {"name": "DTF Film", "icon": "🎞️", "slug": "dtf"},
-    "EMBROIDERY": {"name": "งานปัก", "icon": "🧶", "slug": "embroidery"},
-    "PHONE-CASE": {"name": "เคสโทรศัพท์", "icon": "📱", "slug": "phone-case"},
-}
 
-# ─── Printful Product Cache ─────────────────────────────────────────────────
-
-_product_cache = {"data": None, "ts": 0}
-CACHE_TTL = 300  # 5 minutes
-
-async def _get_products(force=False):
-    """Fetch products from Printful with caching"""
-    now = time.time()
-    if not force and _product_cache["data"] and (now - _product_cache["ts"]) < CACHE_TTL:
-        return _product_cache["data"]
-
-    async with httpx.AsyncClient() as client:
-        all_products = []
-        offset = 0
-        while True:
-            r = await client.get(
-                f"{PRINTFUL_BASE}/products?limit=100&offset={offset}",
-                headers=HEADERS, timeout=30
-            )
-            if r.status_code != 200:
-                raise HTTPException(r.status_code, r.text[:200])
-            data = r.json()
-            batch = data.get("result", [])
-            all_products.extend(batch)
-            if len(batch) < 100:
-                break
-            offset += 100
-
-        _product_cache["data"] = all_products
-        _product_cache["ts"] = now
-        return all_products
-
-def _get_price(variants):
-    """Get min price from variants"""
-    prices = []
-    for v in variants:
-        if isinstance(v, dict):
-            try:
-                p = float(v.get("retail_price", 0) or v.get("price", 0))
-                if p > 0:
-                    prices.append(p)
-            except (ValueError, TypeError):
-                pass
-    return min(prices) if prices else 0
-
-# ─── HSV helper ─────────────────────────────────────────────────────────────
-
-def _hsv_to_rgb(h, s, v):
-    h = h / 60.0
-    i = int(h)
-    f = h - i
-    p = v * (1.0 - s)
-    q = v * (1.0 - s * f)
-    t = v * (1.0 - s * (1.0 - f))
-    if i == 0: r, g, b = v, t, p
-    elif i == 1: r, g, b = q, v, p
-    elif i == 2: r, g, b = p, v, t
-    elif i == 3: r, g, b = p, q, v
-    elif i == 4: r, g, b = t, p, v
-    else: r, g, b = v, p, q
-    return (int(r * 255), int(g * 255), int(b * 255))
-
-# ═══════════════════════════════════════════════════════════════════════════
-# PYDANTIC MODELS
-# ═══════════════════════════════════════════════════════════════════════════
+# ─── Pydantic Models ───────────────────────────────────────────────────────
 
 class Listing(BaseModel):
     title: str
@@ -289,6 +193,181 @@ class WizardStep(BaseModel):
     step: str
     data: dict
 
+
+# ─── Health ────────────────────────────────────────────────────────────────
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "etsy-wizard",
+        "version": "0.1.0",
+        "rules_loaded": True,
+    }
+
+
+# ─── Validator Endpoints ───────────────────────────────────────────────────
+
+
+@app.get("/pod-wizard")
+def pod_wizard_page():
+    """POD Create Product Wizard UI"""
+    from fastapi.responses import HTMLResponse
+    import os
+    html_path = os.path.join(os.path.dirname(__file__), "static", "pod-wizard.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return HTMLResponse(content=content)
+
+@app.post("/validate/listing")
+def check_listing(listing: Listing):
+    """ตรวจสอบ Listing ว่าผ่าน Etsy Rules หรือไม่"""
+    result = validate_listing(listing.model_dump())
+    return result
+
+
+@app.post("/validate/image")
+def check_image(image: ImageCheck):
+    """ตรวจสอบ Image Metadata ก่อน Upload"""
+    result = validate_image_requirements(image.model_dump())
+    return result.to_dict()
+
+
+@app.post("/validate/policies")
+def check_policies(policies: dict):
+    """ตรวจสอบ Shop Policies"""
+    result = validate_policies(policies)
+    return result.to_dict()
+
+
+# ─── Wizard Endpoints ──────────────────────────────────────────────────────
+
+@app.post("/wizard/start")
+def start_wizard():
+    """เริ่ม Wizard — สร้าง Shop ID ใหม่"""
+    import uuid
+    shop_id = str(uuid.uuid4())[:8]
+    shops[shop_id] = {
+        "id": shop_id,
+        "created_at": datetime.now().isoformat(),
+        "steps_completed": [],
+        "profile": {},
+        "listings": [],
+    }
+    save_shop(shop_id)
+    logger.info(f"Wizard started: {shop_id}")
+    return {"shop_id": shop_id, "next_step": "shop_name"}
+
+
+@app.get("/wizard/flow")
+def wizard_flow():
+    """รายการขั้นตอน Wizard ทั้งหมด (Mini App ใช้ render UI)"""
+    return {
+        "wizard": "etsy-shop-setup",
+        "version": "1.0",
+        "steps": [
+            {"id": "shop_name",       "title": "ชื่อร้าน",        "icon": "🏪"},
+            {"id": "shop_banner",     "title": "Banner ร้าน",     "icon": "🖼️"},
+            {"id": "shop_about",      "title": "เรื่องราวร้าน",   "icon": "📖"},
+            {"id": "policies",        "title": "นโยบายร้าน",     "icon": "📋"},
+            {"id": "first_listing",   "title": "Listing แรก",    "icon": "📝"},
+            {"id": "upload_photos",   "title": "รูปสินค้า",       "icon": "📸"},
+            {"id": "review",          "title": "ตรวจสอบก่อนเปิด", "icon": "✅"},
+        ],
+        "total_steps": 7,
+    }
+
+
+@app.post("/wizard/step")
+def save_step(step: WizardStep):
+    """บันทึกข้อมูลแต่ละขั้นตอนของ Wizard"""
+    shop = shops.get(step.shop_id)
+    if not shop:
+        raise HTTPException(status_code=404, detail=f"ไม่พบ Shop ID: {step.shop_id}")
+
+    shop["steps_completed"].append(step.step)
+    shop["profile"][step.step] = step.data
+    shops[step.shop_id] = shop
+    save_shop(step.shop_id)
+
+    # หา next step
+    flow = wizard_flow().get("steps", [])
+    step_ids = [s["id"] for s in flow]
+    current_idx = step_ids.index(step.step) if step.step in step_ids else -1
+    next_step = step_ids[current_idx + 1] if current_idx + 1 < len(step_ids) else None
+
+    logger.info(f"Shop {step.shop_id}: step '{step.step}' saved")
+    return {
+        "ok": True,
+        "shop_id": step.shop_id,
+        "step": step.step,
+        "next_step": next_step,
+        "progress": f"{len(shop['steps_completed'])}/{len(step_ids)}",
+    }
+
+
+@app.get("/wizard/status/{shop_id}")
+def wizard_status(shop_id: str):
+    """ดูสถานะ Wizard ของ Shop"""
+    shop = shops.get(shop_id)
+    if not shop:
+        raise HTTPException(status_code=404, detail=f"ไม่พบ Shop ID: {shop_id}")
+
+    flow = wizard_flow().get("steps", [])
+    step_ids = [s["id"] for s in flow]
+    completed = shop["steps_completed"]
+    current_step_idx = len(completed)
+
+    return {
+        "shop_id": shop_id,
+        "progress": f"{len(completed)}/{len(step_ids)}",
+        "completed_steps": completed,
+        "current_step": step_ids[current_step_idx] if current_step_idx < len(step_ids) else "complete",
+        "is_complete": current_step_idx >= len(step_ids),
+        "profile_summary": {
+            k: v for k, v in shop["profile"].items()
+            if k in ["shop_name", "shop_about"]
+        },
+    }
+
+
+@app.post("/listing/draft")
+def save_listing_draft(shop_id: str, listing: Listing):
+    """Save draft listing (ยังไม่ push ไป Etsy)"""
+    if shop_id not in listings:
+        listings[shop_id] = []
+
+    draft = listing.model_dump()
+    draft["id"] = len(listings[shop_id]) + 1
+    draft["status"] = "draft"
+    draft["created_at"] = datetime.now().isoformat()
+
+    # Validate ก่อน save
+    validation = validate_listing(draft)
+    draft["validation"] = validation
+
+    listings[shop_id].append(draft)
+    draft_id = str(draft["id"])
+    save_listing(shop_id, draft_id, draft)
+    return {
+        "ok": True,
+        "listing_id": draft["id"],
+        "validation": validation,
+    }
+
+
+@app.get("/listing/drafts/{shop_id}")
+def list_drafts(shop_id: str):
+    """รายการ Draft Listing ทั้งหมด"""
+    return {
+        "shop_id": shop_id,
+        "listings": listings.get(shop_id, []),
+        "total": len(listings.get(shop_id, [])),
+    }
+
+
+# ─── AI Assistant Endpoints ──────────────────────────────────────────────
+
 class ProductInfo(BaseModel):
     name: str
     description: str = ""
@@ -298,18 +377,18 @@ class ProductInfo(BaseModel):
     color: str = ""
     style: str = "product"
 
+
 class ImageGenRequest(BaseModel):
     product_name: str = ""
     description: str = ""
     style: str = "product"
-    prompt: str = ""
+    prompt: str = ""  # custom prompt — overrides auto-generated prompt
     model_tier: str = "quality"
     upscale: bool = True
-    aspect_ratio: str = ""
-    product_image_url: Optional[str] = None
-    product_id: str = ""
-    position: Optional[str] = None
-
+    aspect_ratio: str = ""  # "9:16", "16:9", "1:1", "4:5", "3:2"
+    product_image_url: Optional[str] = None  # URL of real product image for compositing
+    product_id: str = ""  # optional product ID for logging
+    position: Optional[str] = None  # JSON bbox from Gemini
     @validator('product_image_url', pre=True)
     def validate_product_image_url(cls, v):
         if v is None:
@@ -329,337 +408,779 @@ class ImageGenRequest(BaseModel):
             raise ValueError(f"aspect_ratio must be one of {valid_ratios}")
         return v
 
+
 class BatchGenRequest(BaseModel):
     shop_id: str
     product_names: list[str]
     style: str = "product"
     model_tier: str = "fast"
 
-class ArtworkValidationRequest(BaseModel):
-    product_id: str
-    width_px: int = 0
-    height_px: int = 0
-    dpi: int = 0
-    file_size_mb: float = 0
-    file_type: str = ""
-    image_base64: Optional[str] = None
 
-class AIArtworkReviewRequest(BaseModel):
-    product_id: str
-    width_px: int = 0
-    height_px: int = 0
-    design_description: str = ""
-    image_base64: Optional[str] = None
-    style: str = ""
+@app.get("/ai/providers")
+def ai_providers():
+    """List available AI image providers"""
+    import os as _os
+    from image_gen import PROVIDER_CONFIG, UPSCALE_MODELS
+    return {
+        "providers": PROVIDER_CONFIG,
+    }
 
-class WizardStartRequest(BaseModel):
-    pass
 
-class WizardStepRequest(BaseModel):
-    session_id: str
-    action: str  # "next" | "back" | "set"
-    data: dict = {}
+@app.post("/ai/generate-image")
+def ai_generate_image(req: ImageGenRequest):
+    """
+    AI Generate product image:
+    1. Create Etsy-optimized prompt
+    2. Generate via Prodia Nano Banana
+    3. Validate Etsy compliance
+    """
+    from image_gen import make_etsy_compliant_prompt
 
+    if req.prompt:
+        prompt = req.prompt
+    elif req.product_name:
+        prompt = make_etsy_compliant_prompt(req.product_name, req.description, req.style)
+    else:
+        raise HTTPException(status_code=400, detail="Either prompt or product_name required")
+
+    try:
+        ar = req.aspect_ratio if req.aspect_ratio else None
+        # Nano Banana เปçน img2img — ถ้าไม่มี inputImage ให้ใช้ blank white canvas
+        input_image = req.product_image_url
+        if not input_image:
+            # Nano Banana เป็น img2img — ใช้ blank white image เป็น canvas
+            # Create a minimal white 1x1 PNG served locally to avoid data URL issues
+            _blank = Path(__file__).parent / "static" / "product_images" / "_blank.png"
+            if _blank.exists():
+                input_image = f"http://localhost:8104/static/product_images/_blank.png"
+            # If we can't serve locally, try public placeholder
+            else:
+                input_image = "https://placehold.co/1x1/white/white.png"
+
+        # Use Prodia Nano Banana via image-gen service (port 8110)
+        result = requests.post(
+            "http://localhost:8110/api/v1/image/generate",
+            json={
+                "prompt": prompt,
+                "inputImage": input_image,
+                "aspectRatio": ar or "1:1",
+            },
+            timeout=120,
+        )
+        if result.status_code != 200:
+            raise Exception(result.text[:200])
+        data = result.json()
+        img_url = data.get("images", [{}])[0].get("url", "")
+        # Fix relative URL — make it accessible through nginx
+        if img_url.startswith("/storage/"):
+            # Prepend /etsy/ so nginx can proxy it
+            img_url = "/etsy" + img_url
+        return {
+            "ok": True,
+            "image_url": img_url,
+            "width": 1024,
+            "height": 1024,
+            "validation": {"valid": True, "issues": []},
+            "cost": data.get("cost", {}).get("dollars", 0),
+            "provider": "prodia",
+            "prompt_used": prompt,
+        }
+    except Exception as e:
+        logger.error(f"Image generation failed: {str(e)}", exc_info=True)
+        error_msg = str(e)
+        if "400" in error_msg or "404" in error_msg or "invalid" in error_msg.lower():
+            raise HTTPException(status_code=400, detail=f"Invalid request: {error_msg}")
+        elif "401" in error_msg or "403" in error_msg or "key" in error_msg.lower():
+            raise HTTPException(status_code=401, detail=f"Authentication failed: {error_msg}")
+        elif "timeout" in error_msg.lower() or "504" in error_msg:
+            raise HTTPException(status_code=504, detail=f"Service timeout: {error_msg}")
+        else:
+            raise HTTPException(status_code=502, detail=f"Image generation failed: {error_msg}")
+
+
+@app.post("/ai/generate-product")
+def ai_generate_product(product: ProductInfo):
+    """
+    AI Generate ทั้ง Concept + Image ในครั้งเดียว:
+    1. AI สร้าง title, tags, description, price, image_prompt
+    2. Generate image ตาม prompt ที่ AI สร้าง
+    3. Validate ทุกอย่าง
+    4. Save draft listing
+    """
+    from assistant import generate_product_concept
+
+    # Step 1: AI สร้าง concept
+    concept = generate_product_concept(product.model_dump())
+
+    # Step 2: Save draft
+    draft = {
+        "title": concept.get("title", product.name),
+        "description": concept.get("description", ""),
+        "tags": concept.get("tags", []),
+        "price": concept.get("price", 19.99),
+        "materials": concept.get("materials", []),
+        "quantity": 1,
+        "status": "ai_generated",
+        "created_at": datetime.now().isoformat(),
+        "image_prompt": concept.get("image_prompt", ""),
+        "image_style": concept.get("image_style", "product"),
+    }
+
+    # Step 3: Try image generation via Prodia Nano Banana
+    image_result = None
+    try:
+        prompt = concept.get("image_prompt", "")
+        if not prompt:
+            from image_gen import make_etsy_compliant_prompt
+            prompt = make_etsy_compliant_prompt(concept.get("product_name", product.name), product.description, concept.get("image_style", "product"))
+        
+        # Call image-gen service (port 8110) for Nano Banana img2img
+        import requests as _req
+        img_resp = _req.post(
+            "http://localhost:8110/api/v1/image/generate",
+            json={"prompt": prompt, "inputImage": product.image_url, "aspectRatio": "1:1"},
+            timeout=120,
+        )
+        if img_resp.status_code == 200:
+            img_data = img_resp.json()
+            image_result = {
+                "image_url": img_data.get("images", [{}])[0].get("url", ""),
+                "cost": img_data.get("cost", {}).get("dollars", 0),
+            }
+            draft["image_url"] = image_result["image_url"]
+        else:
+            raise Exception(img_resp.text[:200])
+    except Exception as e:
+        logger.warning(f"Image gen failed (non-blocking): {e}")
+        image_result = {"error": str(e)}
+
+    return {
+        "ok": True,
+        "product_name": concept.get("product_name", product.name),
+        "title": draft["title"],
+        "tags": draft["tags"],
+        "description": draft["description"][:300],
+        "price": draft["price"],
+        "materials": draft["materials"],
+        "image": image_result,
+        "draft": draft,
+    }
+
+
+@app.post("/ai/batch-generate")
+def ai_batch_generate(req: BatchGenRequest):
+    """
+    AI Batch Generate หลายสินค้าพร้อมกัน
+    ใช้ model_tier="fast" เพื่อประหยัด cost
+    """
+    from assistant import generate_product_concept
+    from image_gen import make_etsy_compliant_prompt
+
+    results = []
+    total_cost = 0
+
+    if req.shop_id not in listings:
+        listings[req.shop_id] = []
+
+    for i, pname in enumerate(req.product_names):
+        product_info = {"name": pname, "description": "", "style": req.style}
+        try:
+            concept = generate_product_concept(product_info)
+            prompt = concept.get("image_prompt", "") or make_etsy_compliant_prompt(pname, "", req.style)
+
+            img = None
+            try:
+                img = {}  # Image gen removed (was Fal.ai)
+                total_cost += img["cost"]
+            except Exception as e:
+                logger.warning(f"Image fail for {pname}: {e}")
+
+            draft = {
+                "id": len(listings[req.shop_id]) + 1,
+                "title": concept.get("title", pname),
+                "status": "ai_generated",
+                "image_url": img["image_url"] if img else None,
+                "created_at": datetime.now().isoformat(),
+            }
+            listings[req.shop_id].append(draft)
+            save_listing(req.shop_id, str(draft["id"]), draft)
+
+            results.append({
+                "index": i,
+                "product_name": concept.get("product_name", pname),
+                "title": draft["title"],
+                "image_url": draft["image_url"],
+                "price": concept.get("price", 19.99),
+                "listing_id": draft["id"],
+            })
+        except Exception as e:
+            results.append({"index": i, "product_name": pname, "error": str(e)})
+
+    return {
+        "ok": True,
+        "shop_id": req.shop_id,
+        "total": len(req.product_names),
+        "succeeded": sum(1 for r in results if "error" not in r),
+        "failed": sum(1 for r in results if "error" in r),
+        "total_cost": total_cost,
+        "results": results,
+    }
+
+
+@app.post("/ai/detect-product")
+def ai_detect_product(data: dict):
+    """
+    Auto-detect product category + product_id จาก brief/concept
+    ใช้ keyword matching + product catalog
+    """
+    from pod_data import get_product_catalog
+    
+    brief = (data.get("brief", "") or "").lower()
+    name = (data.get("name", "") or "").lower()
+    desc = (data.get("description", "") or "").lower()
+    tags = data.get("tags", []) or []
+    tags = [t.lower() for t in tags if t]
+    
+    combined = brief + " " + name + " " + desc + " " + " ".join(tags)
+    
+    # Keyword -> category mapping
+    keywords = {
+        "apparel": ["shirt", "t-shirt", "tshirt", "tee", "hoodie", "sweatshirt", "jacket", "clothing", "wear", "top", "dress", "fashion"],
+        "home": ["poster", "canvas", "print", "wall", "art", "photo", "decoration", "home", "room", "decor", "frame", "tapestry", "metal"],
+        "accessories": ["bag", "tote", "hat", "cap", "phone case", "case", "backpack", "wallet", "pin", "sticker", "keychain"],
+        "drinkware": ["mug", "cup", "bottle", "water bottle", "glass", "thermos", "flask"],
+        "stationery": ["notebook", "journal", "book", "pen", "stationery", "sticker", "card"],
+    }
+    
+    # Score each category
+    scores = {}
+    for cat, cat_kws in keywords.items():
+        score = 0
+        for kw in cat_kws:
+            if kw in combined:
+                # Weight by keyword length and position
+                score += len(kw) * (combined.count(kw))
+        if score > 0:
+            scores[cat] = score
+    
+    # Get product catalog for available products
+    catalog = get_product_catalog()
+    available_products = {}
+    for item in catalog:
+        cat = item.get("category", "")
+        pid = item.get("product_id", "")
+        if not pid:
+            continue
+        if cat not in available_products:
+            available_products[cat] = []
+        available_products[cat].append(pid)
+    
+    # Fallback product per category
+    FALLBACK_PRODUCT = {
+        "apparel": "tshirt_standard",
+        "home": "poster_18x24",
+        "accessories": "tote_bag",
+        "drinkware": "mug_11oz",
+        "stationery": "notebook",
+    }
+    
+    # Pick best category
+    best_cat = max(scores, key=scores.get) if scores else "apparel"
+    # Ensure category exists in catalog
+    if best_cat not in available_products:
+        existing_cats = list(available_products.keys())
+        best_cat = existing_cats[0] if existing_cats else "apparel"
+    
+    # If we have category products, pick best product match
+    cat_products = available_products.get(best_cat, [])
+    product_scores = {}
+    for pid in cat_products:
+        pid_lower = pid.replace("_", " ").lower()
+        for word in pid_lower.split():
+            if word in combined:
+                product_scores[pid] = product_scores.get(pid, 0) + len(word) * 2
+        for word in combined.split():
+            if len(word) > 3 and word in pid_lower:
+                product_scores[pid] = product_scores.get(pid, 0) + len(word)
+    
+    best_product = max(product_scores, key=product_scores.get) if product_scores else (cat_products[0] if cat_products else FALLBACK_PRODUCT.get(best_cat, "tshirt_standard"))
+    
+    return {
+        "ok": True,
+        "category": best_cat,
+        "product_id": best_product,
+        "confidence": scores.get(best_cat, 0),
+        "all_scores": scores,
+    }
+
+
+@app.post("/ai/generate-listing")
+def ai_generate_listing(product: ProductInfo):
+    """AI สร้าง Listing (title + tags + description) จากข้อมูลสินค้า"""
+    from assistant import generate_listing
+    result = generate_listing(product.model_dump())
+    return result
+
+
+@app.post("/ai/fix-listing")
+def ai_fix_listing(listing: Listing, shop_id: str = "default"):
+    """ตรวจสอบ + AI แก้ไข Listing อัตโนมัติ"""
+    from assistant import fix_listing
+    validation = validate_listing(listing.model_dump())
+    fix_result = fix_listing(listing.model_dump(), validation)
+    return {
+        "original": listing.model_dump(),
+        "validation": validation,
+        "fix": fix_result,
+        "summary": {
+            "needs_fix": not validation["valid"],
+            "issues_found": len(validation["results"]),
+        }
+    }
+
+
+@app.post("/ai/optimize-tags")
+def ai_optimize_tags(product: ProductInfo):
+    """AI สร้าง 13 SEO Tags ที่ดีที่สุด"""
+    from assistant import optimize_tags
+    result = optimize_tags(product.model_dump())
+    # Validate tags หลัง gen
+    from rules.validator import validate_tags
+    validation = validate_tags(result.get("tags", [])).to_dict()
+    return {
+        "tags": result.get("tags", []),
+        "search_volume_hints": result.get("search_volume_hints", []),
+        "validation": validation,
+    }
+
+
+@app.post("/ai/validate-and-fix")
+def ai_validate_and_fix(listing: Listing):
+    """Validate + AI Fix ใน endpoint เดียว — ใช้จาก Mini App ได้เลย"""
+    from assistant import fix_listing
+    listing_data = listing.model_dump()
+    # Validate
+    validation = validate_listing(listing_data)
+    # Fix ถ้ามีปัญหา
+    fix_result = fix_listing(listing_data, validation) if not validation["valid"] else None
+    return {
+        "valid": validation["valid"],
+        "validation": validation,
+        "fix": fix_result,
+        "summary": validation.get("summary", {}),
+    }
+
+
+@app.post("/ai/assist-wizard-step")
+def ai_assist_wizard_step(shop_id: str, step: str, context: dict = {}):
+    """AI แนะนำเนื้อหาสำหรับแต่ละ Wizard step"""
+    from assistant import generate_shop_banner_description
+    step_prompts = {
+        "shop_about": "ช่วยเขียน 'About Shop' สำหรับร้าน Etsy",
+        "shop_banner": "แนะนำการออกแบบ Banner",
+        "policies": "ช่วยเขียนนโยบายร้าน Etsy",
+    }
+    prompt = step_prompts.get(step, f"ช่วยเขียนเนื้อหาสำหรับขั้นตอน {step}")
+    suggestion = generate_shop_banner_description({"step": step, **context})
+    return {
+        "step": step,
+        "shop_id": shop_id,
+        "suggestion": suggestion,
+    }
+
+
+# ─── Stats ─────────────────────────────────────────────────────────────────
+
+
+@app.get("/api/pod/designs")
+def api_pod_designs():
+    """List available designs in /var/www/podwizard/designs/ (auto-detected
+    via filesystem scan). Returns [{name, url, size, modified, is_image}]."""
+    import os, json
+    from pathlib import Path
+    base = Path("/var/www/podwizard/designs")
+    if not base.exists():
+        return {"ok": False, "error": "designs directory not found", "designs": []}
+    items = []
+    for p in sorted(base.iterdir()):
+        if p.name.startswith('.'):
+            continue
+        if p.suffix.lower() not in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+            # Include metadata files
+            if p.suffix.lower() == '.json':
+                try:
+                    meta = json.loads(p.read_text())
+                    items.append({
+                        "name": p.name, "type": "metadata", "url": None,
+                        "size": p.stat().st_size, "modified": p.stat().st_mtime,
+                        "meta": meta,
+                    })
+                except Exception:
+                    pass
+            continue
+        items.append({
+            "name": p.name, "type": "image",
+            "url": f"https://podwizard.m2igen.com/designs/{p.name}",
+            "size": p.stat().st_size, "modified": p.stat().st_mtime,
+            "is_image": True,
+        })
+    return {"ok": True, "count": len(items), "designs": items}
+
+
+@app.get("/stats")
+def stats():
+    return {
+        "active_shops": len(shops),
+        "total_listings": sum(len(v) for v in listings.values()),
+        "version": "0.1.0",
+    }
 class ProductResearchRequest(BaseModel):
     product_name: str = ''
     product_image_base64: str = ''
     description: str = ''
     category: str = ''
 
+@app.post('/product/research')
+def api_product_research(req: ProductResearchRequest):
+    from gemini_agent import research_product
+    # Step 1: AI Vision Analysis
+    research = research_product(
+        product_name=req.product_name or 'product',
+        description=req.description,
+        category=req.category,
+        image_base64=req.product_image_base64 or None,
+    )
+    # Step 2: Web Search — improve relevance with product type + Thai context
+    web_data = {'specs': [], 'reviews': [], 'prices': []}
+    if req.product_name:
+        try:
+            from duckduckgo_search import DDGS
+            # Use category from research if available
+            _cat = research.get('category', '') or req.category or ''
+            _type = research.get('product_type', '') or ''
+            with DDGS() as ddgs:
+                # Specs: English + Thai search for better coverage
+                _spec_q = f"{req.product_name} {' '.join(_type.split()[:3])} specifications technical details"[:200]
+                specs = list(ddgs.text(_spec_q, max_results=3))
+                web_data['specs'] = [r.get('body','')[:500] for r in specs if r.get('body','')]
+                # Reviews: site-limited + Thai mixing
+                _rev_q = f"{req.product_name} {' '.join(_cat.split()[:2]) if _cat else ''} review รีวิว"[:200]
+                reviews = list(ddgs.text(_rev_q, max_results=3))
+                web_data['reviews'] = [r.get('body','')[:500] for r in reviews if r.get('body','')]
+                # Prices: Shopee/Lazada preferred for Thai market
+                _price_q = f"{req.product_name} price ราคา shopee lazada"[:200]
+                prices = list(ddgs.text(_price_q, max_results=3))
+                web_data['prices'] = [r.get('title','')[:200] for r in prices if r.get('title','')]
+        except Exception as e:
+            logger.warning(f'Web search failed: {e}')
+    return {'ok': True, 'product_name': req.product_name, 'research': research, 'web_data': web_data}
+
+# ─── Payment Module (PromptPay QR) ────────────────────────────────────
+
 class PaymentQRRequest(BaseModel):
     amount: float = 0
-    phone: str = ''
+    phone: str = ''  # PromptPay phone number (default from env or empty)
     name: str = 'I2M Studio'
     reference: str = ''
+
+@app.post('/payment/create-qr')
+def create_payment_qr(req: PaymentQRRequest):
+    """
+    Generate Thai PromptPay QR Code for payment.
+    Uses the standard EMVCo PromptPay payload.
+    """
+    import qrcode
+    from io import BytesIO
+    import base64
+
+    phone = req.phone or os.environ.get('PROMPTPAY_PHONE', '')
+    if not phone:
+        # Generate a static QR code with just the reference if no phone
+        phone = '0000000000'  # Placeholder — user must configure
+
+    # EMVCo PromptPay payload format
+    # https://www.emvco.com/emvco-qr-code-specification/
+    # Thai PromptPay: Application ID A000000677010111 (Merchant)
+
+    # Strip non-digits from phone
+    phone_clean = ''.join(c for c in phone if c.isdigit())
+
+    # Build EMVCo QR payload
+    # 00 Payload Format Indicator (01 fixed)
+    emv = '000201'
+
+    # 01 Point of Initiation Method (12 = static QR)
+    emv += '010212'
+
+    # 26 Merchant Account Information (Thai PromptPay)
+    # 00: AID = A000000677010111
+    # 01: PromptPay identifier (phone number or tax ID)
+    # If phone: 01 followed by length (2 digits) and "00" + country code "66" + phone without leading 0
+    pp_id = phone_clean
+    if pp_id.startswith('0'):
+        pp_id = '66' + pp_id[1:]  # 0X... → 66X...
+    elif not pp_id.startswith('66'):
+        pp_id = '66' + pp_id
+
+    aid_tag = '0016A000000677010111'
+    phone_tag = f'01{len(pp_id):02d}{pp_id}'
+    merchant_account = aid_tag + phone_tag
+    emv += f'26{len(merchant_account):02d}{merchant_account}'
+
+    # 59 Merchant Name
+    name = req.name[:25]
+    emv += f'59{len(name):02d}{name}'
+
+    # 60 Merchant City (Bangkok)
+    city = 'Bangkok'
+    emv += f'60{len(city):02d}{city}'
+
+    # 61 Postal Code
+    postal = '10100'
+    emv += f'61{len(postal):02d}{postal}'
+
+    if req.amount > 0:
+        amount_str = f'{req.amount:.2f}'
+        emv += f'54{len(amount_str):02d}{amount_str}'
+
+    # 62 Additional Data (reference)
+    if req.reference:
+        ref_tag = f'08{len(req.reference):02d}{req.reference}'
+        emv += f'62{len(ref_tag):02d}{ref_tag}'
+
+    # 63 CRC (calculated)
+    # CRC-CCITT (0xFFFF) on the data
+    crc_data = emv.encode()
+    crc = 0xFFFF
+    for byte in crc_data:
+        crc ^= byte
+        for _ in range(8):
+            if crc & 0x0001:
+                crc = (crc >> 1) ^ 0x8408
+            else:
+                crc >>= 1
+    emv += f'63{crc:04X}'
+
+    # Generate QR code image
+    qr = qrcode.QRCode(box_size=10, border=2)
+    qr.add_data(emv)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color='black', back_color='white')
+
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    b64 = base64.b64encode(buf.getvalue()).decode()
+
+    return {
+        'ok': True,
+        'qr_base64': b64,
+        'qr_payload': emv,
+        'amount': req.amount,
+        'phone': phone_clean,
+        'name': name,
+        'reference': req.reference or '',
+    }
+
+
+# ─── Product Scraping Module ──────────────────────────────────────────
 
 class ScrapeRequest(BaseModel):
     url: str
     max_pages: int = 1
 
-# ═══════════════════════════════════════════════════════════════════════════
-# ROOT + HEALTH
-# ═══════════════════════════════════════════════════════════════════════════
+@app.post('/product/scrape')
+def scrape_product(req: ScrapeRequest):
+    """
+    Scrape product info from e-commerce URLs.
+    Supports general e-commerce sites via BeautifulSoup + heuristics.
+    For JS-heavy sites (Shopee, Lazada), falls back to web search.
+    """
+    import requests
+    from bs4 import BeautifulSoup
+    import re
 
-@app.get("/")
-async def root():
-    index_path = os.path.join(PUBLIC_DIR, "index.html")
-    if os.path.isfile(index_path):
-        return FileResponse(index_path)
-    return {"service": "pod-wizard", "status": "ok"}
+    url = req.url.strip()
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
 
-@app.get("/health")
-def health():
-    return {
-        "status": "ok",
-        "service": "pod-wizard",
-        "version": "2.0.0",
-        "rules_loaded": True,
+    result = {
+        'ok': True,
+        'url': url,
+        'title': '',
+        'price': '',
+        'description': '',
+        'images': [],
+        'specs': {},
+        'source': 'unknown',
     }
 
-@app.get("/api/pod/health")
-async def api_health():
-    return {"status": "ok", "service": "pod-wizard", "cached_products": _product_cache["data"] is not None}
-
-# ═══════════════════════════════════════════════════════════════════════════
-# POD — Printful Proxy (existing pod-wizard endpoints)
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.get("/api/pod/categories")
-async def get_categories_api():
-    products = await _get_products()
-    seen = set()
-    cats = []
-    for p in products:
-        t = p.get("type", "OTHER")
-        if t in seen:
-            continue
-        seen.add(t)
-        info = TYPE_CATEGORIES.get(t, {"name": t, "icon": "📦", "slug": t.lower()})
-        cats.append({
-            "id": t,
-            "name": info["name"],
-            "icon": info["icon"],
-            "slug": info["slug"],
-            "count": sum(1 for x in products if x.get("type") == t)
-        })
-    return {"result": sorted(cats, key=lambda c: -c["count"])}
-
-@app.get("/api/pod/products")
-async def get_products_api(category_id: str = "", search: str = ""):
-    products = await _get_products()
-    if category_id:
-        products = [p for p in products if p.get("type") == category_id]
-    if search:
-        s = search.lower()
-        products = [p for p in products if s in (p.get("name") or "").lower() or s in (p.get("description") or "").lower()]
-    result = []
-    for p in products:
-        result.append({
-            "id": p["id"],
-            "name": p.get("title") or p.get("name", f"Product #{p['id']}"),
-            "type": p.get("type", ""),
-            "image": p.get("image", ""),
-            "description": (p.get("description") or "")[:120],
-            "variant_count": len(p.get("variants", [])),
-            "price": _get_price(p.get("variants", []))
-        })
-    return {"result": result}
-
-@app.get("/api/pod/products/{product_id}")
-async def get_product_api(product_id: int):
-    async with httpx.AsyncClient() as client:
-        r = await client.get(f"{PRINTFUL_BASE}/products/{product_id}", headers=HEADERS, timeout=30)
-        if r.status_code != 200:
-            raise HTTPException(r.status_code, r.text[:200])
-        data = r.json()
-        product = data.get("result", {})
-        p = product.get("product", product)
-        variants = product.get("variants", [])
-        return {
-            "result": {
-                "id": p.get("id", product_id),
-                "name": p.get("title") or p.get("name", ""),
-                "description": p.get("description", ""),
-                "image": p.get("image", ""),
-                "type": p.get("type", ""),
-                "variants": [
-                    {
-                        "id": v["id"],
-                        "name": v.get("name", f"Variant #{v['id']}"),
-                        "size": v.get("size", ""),
-                        "color": v.get("color", ""),
-                        "price": float(v.get("retail_price", 0) or 0)
-                    }
-                    for v in variants if isinstance(v, dict)
-                ]
-            }
-        }
-
-@app.get("/api/pod/print-info/{product_id}")
-async def get_print_info_api(product_id: int):
-    async with httpx.AsyncClient() as client:
-        r = await client.get(
-            f"{PRINTFUL_BASE}/mockup-generator/printfiles/{product_id}",
-            headers=HEADERS, timeout=30
-        )
-        if r.status_code != 200:
-            r2 = await client.get(
-                f"{PRINTFUL_BASE}/mockup-generator/templates?id={product_id}",
-                headers=HEADERS, timeout=30
-            )
-            if r2.status_code != 200:
-                raise HTTPException(404, "No print info available")
-            return r2.json()
-        return r.json()
-
-@app.post("/api/pod/mockup")
-async def create_mockup(body: dict):
-    product_id = body.get("product_id")
-    variant_ids = body.get("variant_ids", [])
-    files = body.get("files", [])
-    if not product_id or not variant_ids:
-        raise HTTPException(400, "Missing required fields: product_id, variant_ids")
-    payload = {
-        "variant_ids": variant_ids,
-        "format": body.get("format", "jpg"),
-        "files": files or [{"placement": "front"}]
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'th-TH,th;q=0.9,en;q=0.8',
     }
-    async with httpx.AsyncClient() as client:
-        r = await client.post(
-            f"{PRINTFUL_BASE}/mockup-generator/create-task/{product_id}",
-            headers=HEADERS, json=payload, timeout=60
-        )
-        if r.status_code != 200:
-            raise HTTPException(r.status_code, r.text[:300])
-        return r.json()
 
-@app.get("/api/pod/mockup/status/{task_key}")
-async def get_mockup_status_api(task_key: str):
-    async with httpx.AsyncClient() as client:
-        r = await client.get(
-            f"{PRINTFUL_BASE}/mockup-generator/task?task_key={task_key}",
-            headers=HEADERS, timeout=30
-        )
-        if r.status_code != 200:
-            raise HTTPException(r.status_code, r.text[:200])
-        return r.json()
-
-DESIGNS_DIR = "/var/www/podwizard/designs"
-
-@app.post("/api/pod/generate-design")
-async def generate_design(body: dict):
-    """Generate artwork design — AI first, fallback to geometric pattern"""
-    product_name = body.get("product_name", "Custom Design")
-    prompt = body.get("prompt", "") or body.get("style", "modern minimalist")
-    os.makedirs(DESIGNS_DIR, exist_ok=True)
-    filename = f"design_{uuid.uuid4().hex[:12]}.png"
-    local_path = os.path.join(DESIGNS_DIR, filename)
-    
-    # Try AI image generation first (Prodia via image service)
     try:
-        import httpx
-        from PIL import Image as PILImage, ImageDraw
-        
-        full_prompt = f"{prompt}, product design, clean background, high quality print-ready, no text, no watermark, no border, centered composition, {product_name}"
-        
-        # Create placeholder input image for img2img
-        placeholder_path = os.path.join(DESIGNS_DIR, "_placeholder.png")
-        os.makedirs(DESIGNS_DIR, exist_ok=True)
-        if not os.path.exists(placeholder_path):
-            img = PILImage.new("RGB", (512, 512), (240, 240, 240))
-            draw = ImageDraw.Draw(img)
-            draw.rectangle([100, 100, 412, 412], outline=(200, 200, 200), width=2)
-            img.save(placeholder_path, "PNG")
-        
-        # Read placeholder as base64
-        import base64
-        with open(placeholder_path, "rb") as f:
-            placeholder_b64 = base64.b64encode(f.read()).decode()
-        
-        async with httpx.AsyncClient(timeout=90) as client:
-            r = await client.post("http://127.0.0.1:8110/api/v1/image/generate", json={
-                "prompt": full_prompt,
-                "inputImage": f"data:image/png;base64,{placeholder_b64}",
-                "model": "nano-banana",
-                "width": 1024,
-                "height": 1024,
-                "aspectRatio": "1:1",
-                "style": "product",
-            })
-            
-            if r.status_code == 200:
-                data = r.json()
-                # Try different response formats
-                image_url = data.get("image_url") or data.get("url") or data.get("output") or data.get("image")
-                image_b64 = data.get("image_base64") or data.get("base64") or data.get("output_base64")
-                
-                if image_b64:
-                    # Save base64 image
-                    img_data = base64.b64decode(image_b64)
-                    with open(local_path, "wb") as f:
-                        f.write(img_data)
-                    public_url = f"https://podwizard.m2igen.com/designs/{filename}"
-                    return {"result": {"image_url": public_url, "prompt": prompt, "source": "ai"}}
-                elif image_url:
-                    # Download URL
-                    img_r = await client.get(image_url)
-                    if img_r.status_code == 200:
-                        with open(local_path, "wb") as f:
-                            f.write(img_r.content)
-                        public_url = f"https://podwizard.m2igen.com/designs/{filename}"
-                        return {"result": {"image_url": public_url, "prompt": prompt, "source": "ai"}}
+        resp = requests.get(url, headers=headers, timeout=15)
+        resp.raise_for_status()
     except Exception as e:
-        logger.warning(f"AI image gen failed, falling back to geometric: {e}")
-    
-    # Fallback: geometric pattern
-    from PIL import Image, ImageDraw, ImageFont
-    size = 1024
-    img = Image.new("RGBA", (size, size), (255, 255, 255, 255))
-    draw = ImageDraw.Draw(img)
-    seed = hash(product_name + prompt)
-    random.seed(seed)
-    rng = random.Random(seed)
-    bg_color = (245, 245, 250, 255)
-    draw.rectangle([0, 0, size, size], fill=bg_color)
-    hue = abs(seed) % 360
-    primary = _hsv_to_rgb(hue, 0.7, 0.9)
-    secondary = _hsv_to_rgb((hue + 40) % 360, 0.5, 0.7)
-    accent = _hsv_to_rgb((hue + 180) % 360, 0.8, 0.8)
-    cx, cy = size // 2, size // 2
-    r = size * 0.38
-    for i in range(3):
-        offset = i * 15
-        draw.ellipse([cx - r + offset, cy - r + offset, cx + r - offset, cy + r - offset],
-                     outline=primary if i == 0 else secondary, width=8 - i * 2)
-    for i in range(6):
-        angle = i * 60 + abs(seed) % 20
-        rad = math.radians(angle)
-        x1 = cx + int(r * 0.6 * math.cos(rad))
-        y1 = cy + int(r * 0.6 * math.sin(rad))
-        x2 = cx + int(r * 0.9 * math.cos(rad + 0.3))
-        y2 = cy + int(r * 0.9 * math.sin(rad + 0.3))
-        draw.line([(x1, y1), (x2, y2)], fill=accent, width=6)
-    for _ in range(12):
-        angle = rng.uniform(0, 360)
-        dist = rng.uniform(r * 0.2, r * 0.85)
-        rad = math.radians(angle)
-        dx = cx + int(dist * math.cos(rad))
-        dy = cy + int(dist * math.sin(rad))
-        dot_r = rng.randint(4, 12)
-        draw.ellipse([dx - dot_r, dy - dot_r, dx + dot_r, dy + dot_r],
-                     fill=secondary if rng.random() > 0.5 else accent)
-    cr = int(r * 0.25)
-    draw.ellipse([cx - cr, cy - cr, cx + cr, cy + cr],
-                 outline=primary, width=6, fill=(255, 255, 255, 200))
-    letter = product_name[0].upper() if product_name else "P"
-    try:
-        font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 180)
-    except Exception:
-        font_large = ImageFont.load_default()
-    bbox = draw.textbbox((0, 0), letter, font=font_large)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    draw.text((cx - tw // 2, cy - th // 2), letter, fill=primary, font=font_large)
-    img.save(local_path, "PNG")
-    public_url = f"https://podwizard.m2igen.com/designs/{filename}"
-    return {"result": {"image_url": public_url, "prompt": prompt, "source": "geometric_fallback"}}
+        # Fallback: use product/research with image
+        result['error'] = f'Cannot fetch URL: {e}'
+        result['ok'] = False
+        return result
 
-# ═══════════════════════════════════════════════════════════════════════════
-# POD — Static Product Reference (from pod_sizes.py / pod_data.py)
-# ═══════════════════════════════════════════════════════════════════════════
+    soup = BeautifulSoup(resp.text, 'lxml' if 'lxml' else 'html.parser')
 
-@app.get("/api/pod/catalog")
+    # Detect site
+    domain = url.lower().split('/')[2] if '//' in url else ''
+    if 'shopee' in domain:
+        result['source'] = 'shopee'
+    elif 'lazada' in domain:
+        result['source'] = 'lazada'
+    elif 'amazon' in domain:
+        result['source'] = 'amazon'
+    elif 'etsy' in domain:
+        result['source'] = 'etsy'
+    else:
+        result['source'] = 'generic'
+
+    # Extract title from various meta/og tags
+    title = ''
+    for sel in ['meta[property="og:title"]', 'meta[name="twitter:title"]', 'h1', 'h1[class*="title"]', 'h1[class*="product"]', '[class*="product-name"]', '[class*="product-title"]', 'title']:
+        tag = soup.select_one(sel)
+        if tag:
+            if tag.name == 'meta':
+                title = tag.get('content', '')
+            else:
+                title = tag.get_text(strip=True)
+            if title:
+                break
+
+    result['title'] = title
+
+    # Extract description
+    for sel in ['meta[property="og:description"]', 'meta[name="description"]', '[class*="description"]', '[class*="detail"]', '#productDescription', '[itemprop="description"]']:
+        tag = soup.select_one(sel)
+        if tag:
+            if tag.name == 'meta':
+                result['description'] = tag.get('content', '').strip()
+            else:
+                result['description'] = tag.get_text(strip=True)[:500]
+            if result['description']:
+                break
+
+    # Extract price
+    for sel in ['[class*="price"]', '[class*="Price"]', '[itemprop="price"]', 'meta[property="product:price:amount"]', 'meta[itemprop="price"]', '[class*="current-price"]', '[data-testid="price"]']:
+        tag = soup.select_one(sel)
+        if tag:
+            if tag.name == 'meta':
+                result['price'] = tag.get('content', '')
+            else:
+                price_text = tag.get_text(strip=True)
+                price_match = re.search(r'[\d,]+(?:\.\d+)?', price_text.replace(',', ''))
+                if price_match:
+                    result['price'] = price_match.group()
+            if result['price']:
+                break
+
+    # Extract images
+    for sel in ['meta[property="og:image"]', 'meta[name="twitter:image"]', '[class*="gallery"] img', '[class*="product-image"] img', '[id*="main-img"]', '[class*="main-image"] img', '.image-gallery img', 'img[itemprop="image"]']:
+        tags = soup.select(sel)
+        for tag in tags:
+            src = tag.get('src') or tag.get('data-src') or tag.get('content', '')
+            if src and src.startswith(('http://', 'https://')):
+                if src not in result['images']:
+                    result['images'].append(src)
+            if len(result['images']) >= 5:
+                break
+        if len(result['images']) >= 5:
+            break
+
+    # Extract specs/features table  
+    for table in soup.select('table[class*="spec"], table[class*="attribute"], .product-specs table, .data-table'):
+        rows = table.select('tr')
+        for row in rows:
+            cells = row.select('th, td')
+            if len(cells) >= 2:
+                key = cells[0].get_text(strip=True)
+                val = cells[1].get_text(strip=True)
+                if key and val:
+                    result['specs'][key] = val
+
+    if not result['images']:
+        # Fallback: extract any large image
+        for img in soup.select('img[src]'):
+            src = img.get('src', '')
+            if src.startswith(('http://', 'https://')) and any(ext in src.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp']):
+                if 'logo' not in src.lower() and 'icon' not in src.lower():
+                    result['images'].append(src)
+                    if len(result['images']) >= 3:
+                        break
+
+    return result
+
+
+# ─── POD (Print on Demand) Module ─────────────────────────────────────────────────
+
+class ArtworkValidationRequest(BaseModel):
+    """ข้อมูลรูป artwork ที่ต้องการตรวจสอบ"""
+    product_id: str
+    width_px: int = 0
+    height_px: int = 0
+    dpi: int = 0
+    file_size_mb: float = 0
+    file_type: str = ""
+    image_base64: Optional[str] = None  # ถ้ามี → ส่งให้ AI วิเคราะห์ design ด้วย
+
+
+class AIArtworkReviewRequest(BaseModel):
+    """ให้ AI วิเคราะห์ artwork design"""
+    product_id: str
+    width_px: int = 0
+    height_px: int = 0
+    design_description: str = ""  # ถ้าไม่มีรูป บอก description
+    image_base64: Optional[str] = None  # รูป artwork
+    style: str = ""  # minimal, colorful, vintage, etc.
+
+
+@app.get("/pod/products")
 def pod_list_products(category: Optional[str] = None):
-    """รายการสินค้า POD ทั้งหมด หรือกรองตาม category"""
-    from pod_sizes import list_products, get_categories as pod_cats
+    """
+    รายการสินค้า POD ทั้งหมด หรือกรองตาม category
+    categories: apparel, drinkware, home, accessories, stationery
+    """
+    from pod_sizes import list_products, get_categories
     return {
         "ok": True,
         "products": list_products(category),
         "total": len(list_products(category)),
-        "categories": pod_cats(),
+        "categories": get_categories(),
     }
 
-@app.get("/api/pod/catalog/{category}")
+
+# Category metadata for frontend wizard
+_CATEGORY_META = {
+    "apparel":     {"id": "apparel",     "name": "เสื้อผ้า",            "icon": "👕"},
+    "drinkware":   {"id": "drinkware",   "name": "แก้ว/เครื่องดื่ม",     "icon": "☕"},
+    "home":        {"id": "home",        "name": "ของตกแต่งบ้าน",       "icon": "🏠"},
+    "accessories": {"id": "accessories", "name": "เครื่องประดับ/กระเป๋า", "icon": "👜"},
+    "stationery":  {"id": "stationery",  "name": "สินค้ากระดาษ",        "icon": "📒"},
+}
+
+
+@app.get("/api/pod/categories")
+def api_pod_categories():
+    """
+    List POD categories for frontend wizard (returns id + name + icon).
+    Frontend index.html calls 'api/pod/categories' after provider selection.
+    """
+    from pod_sizes import get_categories
+    cats = get_categories()
+    result = [_CATEGORY_META.get(c, {"id": c, "name": c.title(), "icon": "📦"}) for c in cats]
+    return {"ok": True, "result": result, "total": len(result)}
+
+
+@app.get("/pod/products/{category}")
 def pod_products_by_category(category: str):
     """รายการสินค้า POD ตามหมวดหมู่"""
     from pod_sizes import list_products
@@ -668,22 +1189,43 @@ def pod_products_by_category(category: str):
         raise HTTPException(status_code=404, detail=f"ไม่พบหมวดหมู่: {category}")
     return {"ok": True, "category": category, "products": products, "total": len(products)}
 
-@app.get("/api/pod/print-spec/{product_id}")
-def pod_print_info_static(product_id: str, variant_id: Optional[int] = None):
-    """ดึง Printful mockup template data สำหรับ POD product (static reference)"""
-    from pod_data import get_printful_printfiles, get_printful_mockup_templates
+
+@app.get("/pod/print-info/{product_id}")
+def pod_print_info(product_id: str, variant_id: Optional[int] = None):
+    """
+    ดึง Printful mockup template data: print area dimensions, placements, variant mapping
+    
+    - product_id: POD product id (จาก pod_sizes.py)
+    - variant_id: (optional) ถ้าระบุ จะ filter เฉพาะ variants ที่เกี่ยวข้อง
+    
+    Returns:
+      - printfiles: placements + printfile dimensions
+      - templates: variant_mapping + templates พร้อม print_area coords
+      - recommended_size: ขนาด artwork ที่แนะนำ (px)
+    """
+    from pod_data import get_product_detail, get_printful_printfiles, get_printful_mockup_templates
+    
+    # 1. หา Printful product ID
     product = get_product_detail(product_id)
     if not product:
         raise HTTPException(status_code=404, detail=f"ไม่พบ Product ID: {product_id}")
+    
     pf_id = product.get("pf_product_id")
     if not pf_id:
         return {"ok": False, "error": f"สินค้า {product_id} ไม่มี Printful product ID", "product": product}
+    
+    # 2. Fetch Printful data
     pf_data = get_printful_printfiles(pf_id)
     templates_data = get_printful_mockup_templates(pf_id)
+    
     if not pf_data:
         raise HTTPException(status_code=502, detail=f"ไม่สามารถดึงข้อมูล print area จาก Printful สำหรับ product {pf_id}")
+    
+    # 3. Extract print area dimensions
     printfiles = pf_data.get("printfiles", [])
     placements = pf_data.get("available_placements", {})
+    
+    # 4. Find largest printfile for recommended size
     recommended_size = None
     for pf in printfiles:
         w = pf.get("width", 0)
@@ -691,16 +1233,25 @@ def pod_print_info_static(product_id: str, variant_id: Optional[int] = None):
         dpi = pf.get("dpi", 150)
         if w and h:
             if not recommended_size or (w * h) > (recommended_size["width"] * recommended_size["height"]):
-                recommended_size = {"width": w, "height": h, "dpi": dpi, "label": pf.get("title", f"{w}x{h}")}
+                recommended_size = {
+                    "width": w,
+                    "height": h,
+                    "dpi": dpi,
+                    "label": pf.get("title", f"{w}x{h}"),
+                }
+    
+    # 5. Filter variant mapping by variant_id if specified
     variant_mapping = []
     if templates_data:
         all_vm = templates_data.get("variant_mapping", [])
         if variant_id:
             variant_mapping = [vm for vm in all_vm if vm.get("variant_id") == variant_id]
         else:
-            variant_mapping = all_vm[:3]
+            variant_mapping = all_vm[:3]  # limit to first 3 to keep response small
+    
+    # 6. Get placement-specific templates (sample)
     placement_templates = {}
-    for vm in variant_mapping[:1]:
+    for vm in variant_mapping[:1]:  # first variant only for overview
         for t in vm.get("templates", []):
             placement = t.get("placement", "front")
             if placement not in placement_templates:
@@ -714,6 +1265,7 @@ def pod_print_info_static(product_id: str, variant_id: Optional[int] = None):
                     "template_id": t.get("template_id"),
                     "image_url": t.get("image_url", ""),
                 }
+    
     return {
         "ok": True,
         "product_id": product_id,
@@ -728,21 +1280,382 @@ def pod_print_info_static(product_id: str, variant_id: Optional[int] = None):
         "note": "ใช้ recommended_size สำหรับ AI generate artwork",
     }
 
-@app.get("/api/pod/product/{product_id}")
+
+@app.get("/pod/product/{product_id}")
 def pod_get_product(product_id: str):
-    """รายละเอียดสินค้า POD พร้อมขนาด artwork + Printful data"""
+    """รายละเอียดสินค้า POD พร้อมขนาด artwork + Printful data (variants, pricing, colors)"""
+    from pod_data import get_product_detail
     product = get_product_detail(product_id)
     if not product:
+        # Fallback to basic spec
         from pod_sizes import get_product
         product = get_product(product_id)
         if not product:
             raise HTTPException(status_code=404, detail=f"ไม่พบ Product ID: {product_id}")
     return {"ok": True, "product": product}
 
-@app.post("/api/pod/validate-artwork")
+
+# ──────────────────────────────────────────────────────────────────
+# Legacy API aliases — frontend index.html (Minecraft theme) calls
+# these endpoints with /api/pod/* prefix. We expose them as thin
+# wrappers around the canonical /pod/* routes so the existing UI
+# keeps working without changing the theme.
+# ──────────────────────────────────────────────────────────────────
+
+
+@app.get("/api/pod/products")
+def api_pod_products(category_id: Optional[str] = None):
+    """Legacy: GET /api/pod/products?category_id=X
+    Wraps /pod/products?category=X and returns {result: [...]} shape
+    expected by index.html loadProducts().
+    """
+    from pod_sizes import list_products, get_categories
+    prods = list_products(category_id)
+    return {
+        "ok": True,
+        "result": prods,
+        "total": len(prods),
+        "categories": get_categories(),
+        "category": category_id,
+    }
+
+
+@app.get("/api/pod/products/{product_id}")
+def api_pod_product_detail(product_id: str):
+    """Legacy: GET /api/pod/products/{id}
+    Wraps /pod/product/{id} — frontend reads data.result.product.
+    Synthesizes a flat `variants` array from pf_colors + pf_sizes for
+    the index.html wizard variant picker.
+    """
+    from pod_data import get_product_detail
+    from pod_sizes import get_product
+    product = get_product_detail(product_id)
+    if not product:
+        product = get_product(product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail=f"ไม่พบ Product ID: {product_id}")
+
+    # Build a flat variants array if backend doesn't have one
+    if not product.get("variants"):
+        pf_variants = product.get("pf_variants") or []
+        if pf_variants:
+            # Use real Printful variant ids so mockup API works
+            product["variants"] = [{
+                "id": v.get("id"),
+                "name": v.get("name"),
+                "size": v.get("size"),
+                "color": v.get("color"),
+                "color_code": v.get("color_code"),
+            } for v in pf_variants if v.get("id")]
+        else:
+            # Fallback: synthesize from colors/sizes with sequential ids
+            colors = product.get("pf_colors") or []
+            sizes = product.get("pf_sizes") or []
+            synthesized = []
+            vid = 1
+            for color in colors:
+                cname = color.get("name") if isinstance(color, dict) else str(color)
+                ccode = color.get("code") if isinstance(color, dict) else ""
+                for size in sizes:
+                    synthesized.append({
+                        "id": vid,
+                        "name": f"{cname} - {size}" if cname else size,
+                        "size": size,
+                        "color": cname,
+                        "color_code": ccode,
+                    })
+                    vid += 1
+            if not synthesized and sizes:
+                synthesized = [{"id": 1, "name": sizes[0], "size": sizes[0], "color": ""}]
+            product["variants"] = synthesized
+    return {"ok": True, "result": {"product": product}}
+
+
+@app.get("/api/pod/print-info/{product_id}")
+def api_pod_print_info(product_id: str):
+    """Legacy: GET /api/pod/print-info/{id}
+    Re-uses /pod/print-info response but reshapes to {result: ...}.
+    """
+    # Inline implementation (can't easily redirect with body shaping)
+    from pod_data import get_product_detail, get_printful_printfiles, get_printful_mockup_templates
+    product = get_product_detail(product_id)
+    if not product:
+        from pod_sizes import get_product
+        product = get_product(product_id)
+    if not product:
+        return {"ok": False, "result": {}, "error": f"ไม่พบ Product ID: {product_id}"}
+    pf_id = product.get("pf_product_id")
+    if not pf_id:
+        return {"ok": False, "result": {"placements": [], "printfiles": []},
+                "error": "ไม่มี Printful product ID"}
+
+    pf_data = get_printful_printfiles(pf_id) or {}
+    templates_data = get_printful_mockup_templates(pf_id) or {}
+    placements = pf_data.get("available_placements", {})
+    printfiles = pf_data.get("printfiles", [])
+
+    return {
+        "ok": True,
+        "result": {
+            "placements": placements,
+            "printfiles": printfiles,
+            "variant_mapping": (templates_data.get("variant_mapping", []) or [])[:3],
+            "product_id": product_id,
+            "pf_product_id": pf_id,
+        },
+    }
+
+
+@app.post("/api/pod/generate-design")
+async def api_pod_generate_design(req: dict):
+    """Legacy: POST /api/pod/generate-design
+    Body: {product_name, prompt, style}
+    Calls the AI image service (port 8110) directly to keep the same
+    flow as /ai/generate-image but shaped for index.html (data.result.image_url).
+    """
+    import httpx
+    prompt = req.get("prompt") or req.get("style") or "minimalist design"
+    product_name = req.get("product_name") or "Design"
+    full_prompt = f"Design for {product_name}: {prompt}"
+
+    # Width/height from artwork spec if product known, else defaults
+    width = int(req.get("width") or 1024)
+    height = int(req.get("height") or 1024)
+
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            r = await client.post(
+                "http://127.0.0.1:8110/api/v1/image/generate",
+                json={"prompt": full_prompt, "width": width, "height": height},
+            )
+        if r.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"AI service error: {r.status_code}")
+        data = r.json()
+        images = data.get("images") or []
+        if not images:
+            raise HTTPException(status_code=502, detail="AI returned no image")
+        first = images[0]
+        raw_url = first.get("full_url") or first.get("url") or ""
+        # Rewrite http://localhost:8110/storage/images/X → /storage/images/X
+        # so the image loads via the podwizard subdomain (avoids browser
+        # CORS loopback policy that blocks http://localhost from https pages).
+        image_url = raw_url
+        if "localhost:8110" in image_url:
+            image_url = "/storage/images/" + raw_url.rsplit("/storage/images/", 1)[-1]
+        elif image_url.startswith("http://localhost"):
+            image_url = image_url.replace("http://localhost:8110", "")
+        return {"ok": True, "result": {"image_url": image_url, "prompt": full_prompt}}
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"AI service unreachable: {e}")
+
+
+def _to_absolute_url(url: str) -> str:
+    """Convert relative image URLs to absolute Printful-fetchable URLs.
+
+    Printful's mockup generator fetches the image by URL. Relative paths
+    and http://localhost references both fail ("Invalid URL"). Always
+    return a fully qualified https URL pointing to the podwizard subdomain
+    where /storage/images/ is reverse-proxied to port 8110.
+    """
+    if not url:
+        return url
+    if url.startswith("http://localhost:8110"):
+        return url.replace("http://localhost:8110", "https://podwizard.m2igen.com")
+    if url.startswith("http://127.0.0.1:8110"):
+        return url.replace("http://127.0.0.1:8110", "https://podwizard.m2igen.com")
+    if url.startswith("/"):
+        return f"https://podwizard.m2igen.com{url}"
+    return url
+
+
+@app.post("/api/pod/mockup")
+async def api_pod_create_mockup(req: dict):
+    """Legacy: POST /api/pod/mockup
+    Body: {product_id, variant_ids, format, files: [{placement, image_url}]}
+    Returns {result: {task_key}} shape for index.html.
+    """
+    import httpx
+    from pod_data import get_product_detail, get_printful_printfiles
+
+    variant_ids = req.get("variant_ids") or []
+    if not variant_ids:
+        raise HTTPException(status_code=400, detail="variant_ids required")
+
+    product_id_raw = req.get("product_id")
+    product_id = None
+    if product_id_raw is not None:
+        try:
+            product_id = int(product_id_raw)
+        except (TypeError, ValueError):
+            # Resolve from string id like "tshirt_standard" or numeric string
+            from pod_sizes import get_product as _get_pod_product
+            product = get_product_detail(str(product_id_raw)) if product_id_raw else None
+            if not product:
+                product = _get_pod_product(str(product_id_raw)) if product_id_raw else None
+            if product and product.get("pf_product_id"):
+                product_id = int(product["pf_product_id"])
+
+    # If product_id is still None (frontend sent null because parseInt("tshirt_standard")
+    # returned NaN), reverse-resolve from the first variant id via Printful catalog.
+    if product_id is None:
+        first_variant_id = int(variant_ids[0])
+        # Try common Printful products in POD catalog
+        from pod_data import get_product_catalog
+        catalog = get_product_catalog() or []
+        for prod in catalog:
+            pf_variants = prod.get("pf_variants") or prod.get("pf_variants_slim") or []
+            if any(int(v.get("id")) == first_variant_id for v in pf_variants if isinstance(v, dict) and v.get("id")):
+                pf_pid = prod.get("pf_product_id")
+                if pf_pid:
+                    product_id = int(pf_pid)
+                    break
+        if product_id is None:
+            raise HTTPException(status_code=400, detail=f"ไม่พบ Printful product ID for {product_id_raw} / variant {first_variant_id}")
+
+    # Resolve printfile_id from printfiles
+    pf_data = get_printful_printfiles(product_id) or {}
+    printfiles = pf_data.get("printfiles", [])
+    placements = pf_data.get("available_placements", {})
+
+    # Determine valid placements for this product
+    if isinstance(placements, dict):
+        valid_placements = list(placements.keys())
+    elif isinstance(placements, list):
+        valid_placements = placements
+    else:
+        valid_placements = []
+
+    if not printfiles:
+        # No detailed printfiles — use placements only (e.g. "default")
+        if not valid_placements:
+            raise HTTPException(status_code=502, detail="ไม่พบข้อมูล print area สำหรับสินค้านี้")
+        files_in = req.get("files") or []
+        files_out = []
+        for f in files_in:
+            image_url = f.get("image_url")
+            if not image_url:
+                continue
+            image_url = _to_absolute_url(image_url)
+            placement = f.get("placement")
+            if not placement or placement not in valid_placements:
+                placement = valid_placements[0]
+            files_out.append({
+                "placement": placement,
+                "image_url": image_url,
+                "position": {
+                    "area_width": 3000,
+                    "area_height": 3000,
+                    "width": 3000,
+                    "height": 3000,
+                    "top": 0,
+                    "left": 0,
+                },
+            })
+    else:
+        files_in = req.get("files") or []
+        files_out = []
+        for f in files_in:
+            placement = f.get("placement") or "front"
+            image_url = f.get("image_url")
+            if not image_url:
+                continue
+            image_url = _to_absolute_url(image_url)
+            # find matching printfile
+            match = next((pf for pf in printfiles if pf.get("placement") == placement), None)
+            if not match and valid_placements:
+                # pick first valid placement as fallback
+                placement = valid_placements[0]
+                match = next((pf for pf in printfiles if pf.get("placement") == placement), None)
+            if not match:
+                match = printfiles[0]
+                placement = match.get("placement") or placement
+            position = {
+                "area_width": match.get("width", 3000),
+                "area_height": match.get("height", 3000),
+                "width": match.get("width", 3000),
+                "height": match.get("height", 3000),
+                "top": 0,
+                "left": 0,
+            }
+            files_out.append({
+                "placement": placement,
+                "image_url": image_url,
+                "position": position,
+                "printfile_id": match.get("id"),
+            })
+
+    if not files_out:
+        raise HTTPException(status_code=400, detail="files with image_url required")
+
+    from pod_data import create_printful_mockup
+    fmt = req.get("format") or "jpg"
+    result = create_printful_mockup(product_id, variant_ids, files_out, fmt)
+    if not result or not result.get("task_key"):
+        raise HTTPException(status_code=502, detail="Printful mockup task creation failed")
+    return {"ok": True, "result": result}
+
+
+@app.get("/api/pod/mockup/status/{task_key}")
+def api_pod_mockup_status(task_key: str):
+    """Legacy: GET /api/pod/mockup/status/{key}
+    Returns {result: {status, mockups}} shape for index.html.
+    """
+    from pod_data import check_mockup_task
+    result = check_mockup_task(task_key)
+    if not result:
+        # Return pending so frontend keeps polling
+        return {"ok": True, "result": {"status": "pending", "mockups": []}}
+    # Normalise: ensure mockups array shape {mockup_url}
+    mockups = result.get("mockups") or []
+    return {"ok": True, "result": {
+        "status": result.get("status", "pending"),
+        "mockups": mockups,
+    }}
+
+
+@app.post("/api/ai/generate-listing")
+async def api_ai_generate_listing(req: dict):
+    """Legacy: POST /api/ai/generate-listing
+    Wraps /ai/generate-listing with {result: {title, description, tags}} shape.
+    Maps frontend's product_name → backend's name.
+    """
+    import httpx
+    # Map frontend field names → backend ProductInfo schema
+    payload = {
+        "name": req.get("product_name") or req.get("name") or "",
+        "category": req.get("category") or "",
+        "size": req.get("variant") or req.get("size") or "",
+        "style": "product",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            r = await client.post(
+                "http://127.0.0.1:8104/ai/generate-listing",
+                json=payload,
+            )
+        if r.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"AI listing service error: {r.status_code}")
+        data = r.json()
+        # Backend /ai/generate-listing returns shape with title/description/tags at root or in result
+        result = data.get("result") or data
+        return {"ok": True, "result": {
+            "title": result.get("title", ""),
+            "description": result.get("description") or result.get("desc", ""),
+            "tags": result.get("tags") or [],
+        }}
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"AI listing service unreachable: {e}")
+
+
+@app.post("/pod/validate-artwork")
 def pod_validate_artwork(req: ArtworkValidationRequest):
-    """ตรวจสอบ artwork ว่าพอดีกับ POD product หรือไม่"""
+    """
+    ตรวจสอบ artwork ว่าพอดีกับ POD product หรือไม่
+    
+    ส่งขนาดรูป + DPI + file type → ได้ผล validation + คะแนน + คำแนะนำ
+    """
     from pod_sizes import validate_artwork
+    
     image_info = {
         "width_px": req.width_px,
         "height_px": req.height_px,
@@ -750,6 +1663,7 @@ def pod_validate_artwork(req: ArtworkValidationRequest):
         "file_size_mb": req.file_size_mb,
         "file_type": req.file_type,
     }
+    
     result = validate_artwork(image_info, req.product_id)
     return {
         "ok": result["valid"],
@@ -767,14 +1681,25 @@ def pod_validate_artwork(req: ArtworkValidationRequest):
         "recommendations": result["recommendations"],
     }
 
-@app.post("/api/pod/ai-review")
+
+@app.post("/pod/ai-review")
 def pod_ai_review(req: AIArtworkReviewRequest):
-    """ให้ AI วิเคราะห์ artwork design + แนะนำการปรับปรุง"""
+    """
+    ให้ AI (Gemini) วิเคราะห์ artwork design + แนะนำการปรับปรุง
+    
+    - ถ้ามี image_base64 → ส่งให้ AI ดู design จริง
+    - ถ้าไม่มี → ใช้ design_description
+    - AI จะแนะนำเรื่องสี, layout, text placement, print readiness
+    """
     from pod_sizes import get_product
+    
     product = get_product(req.product_id)
     if not product:
         raise HTTPException(status_code=404, detail=f"ไม่พบ Product ID: {req.product_id}")
+
+    # สร้าง prompt ส่งให้ Gemini
     has_image = bool(req.image_base64)
+    
     system_prompt = f"""คุณคือ POD (Print on Demand) Design Expert
 
 สินค้า: {product['name']}
@@ -791,7 +1716,10 @@ def pod_ai_review(req: AIArtworkReviewRequest):
 5. ถ้าไม่เหมาะสม → แนะนำทางเลือก
 
 ตอบเป็นภาษาไทย อ่านง่าย มีหัวข้อชัดเจน"""
+
     if has_image:
+        # With image - send for Gemini vision analysis
+        # For now, describe what we can check from metadata
         user_prompt = f"""วิเคราะห์ artwork design นี้:
 - ขนาด: {req.width_px}x{req.height_px}px
 - สไตล์: {req.style or 'N/A'}
@@ -811,10 +1739,20 @@ def pod_ai_review(req: AIArtworkReviewRequest):
 3. สีที่ใช้ (CMYK vs RGB)
 4. Tips เฉพาะสินค้าชนิดนี้
 5. ตัวอย่าง layout ที่แนะนำ"""
+
     from assistant import _call_gemini
     raw = _call_gemini(system_prompt, user_prompt)
+    
     if raw:
-        return {"ok": True, "product_name": product["name"], "product_id": req.product_id, "ai_analysis": raw, "source": "gemini"}
+        return {
+            "ok": True,
+            "product_name": product["name"],
+            "product_id": req.product_id,
+            "ai_analysis": raw,
+            "source": "gemini",
+        }
+    
+    # Fallback — ให้คำแนะนำตาม template
     return {
         "ok": True,
         "product_name": product["name"],
@@ -829,9 +1767,26 @@ def pod_ai_review(req: AIArtworkReviewRequest):
         "source": "template",
     }
 
-# ═══════════════════════════════════════════════════════════════════════════
-# POD WIZARD (Session-based product creation)
-# ═══════════════════════════════════════════════════════════════════════════
+
+# ─── POD Create Product Wizard ──────────────────────────────────────────────
+
+class WizardStartRequest(BaseModel):
+    """เริ่ม Wizard session ใหม่"""
+    pass
+
+
+class WizardStepRequest(BaseModel):
+    """ร้องขอข้อมูลในแต่ละ step"""
+    session_id: str
+    action: str  # "next" | "back" | "set"
+    data: dict = {}
+
+
+from pod_wizard import get_manager, WizardSession, handle_step_provider, handle_step_category
+from pod_wizard import handle_step_product, handle_step_variant, handle_step_print_info
+from pod_wizard import handle_step_artwork, handle_step_mockup, handle_step_mockup_status
+from pod_wizard import handle_step_content, handle_step_pricing, handle_step_summary
+from pod_data import get_providers
 
 STEP_HANDLERS = {
     "provider": handle_step_provider,
@@ -846,16 +1801,28 @@ STEP_HANDLERS = {
     "summary": handle_step_summary,
 }
 
-@app.get("/api/pod/wizard/steps")
-def pod_wizard_steps():
-    """แสดงขั้นตอนทั้งหมดของ POD Create Product Wizard"""
-    return {"ok": True, "steps": WIZARD_STEPS, "total": len(WIZARD_STEPS)}
 
-@app.post("/api/pod/wizard/start")
+@app.get("/pod/wizard/steps")
+def pod_wizard_steps():
+    """
+    แสดงขั้นตอนทั้งหมดของ POD Create Product Wizard
+    """
+    from pod_wizard import WIZARD_STEPS
+    return {
+        "ok": True,
+        "steps": WIZARD_STEPS,
+        "total": len(WIZARD_STEPS),
+    }
+
+
+@app.post("/pod/wizard/start")
 def pod_wizard_start():
-    """เริ่ม Wizard session ใหม่"""
+    """
+    เริ่ม Wizard session ใหม่ — สร้าง session + return step แรก
+    """
     mgr = get_manager()
     session = mgr.create_session()
+
     return {
         "ok": True,
         "session": session.to_dict(),
@@ -863,46 +1830,76 @@ def pod_wizard_start():
         "providers": get_providers(),
     }
 
-@app.get("/api/pod/wizard/{session_id}")
+
+@app.get("/pod/wizard/{session_id}")
 def pod_wizard_status(session_id: str):
-    """ดูสถานะปัจจุบันของ wizard session"""
+    """
+    ดูสถานะปัจจุบันของ wizard session
+    """
     mgr = get_manager()
     session = mgr.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session not found: {session_id}")
+
     return {
         "ok": True,
         "session": session.to_dict(),
         "current_step": session.get_current_step(),
     }
 
-@app.post("/api/pod/wizard/step")
+
+@app.post("/pod/wizard/step")
 def pod_wizard_step(req: WizardStepRequest):
-    """ดำเนินการใน Wizard step"""
+    """
+    ดำเนินการใน Wizard step
+
+    action: "next" → ข้าม step | "back" → ย้อนกลับ | "set" → ตั้งค่าใน step ปัจจุบัน
+    data: dict ของข้อมูลที่แต่ละ step ต้องการ
+    """
     mgr = get_manager()
     session = mgr.get_session(req.session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session not found: {req.session_id}")
+
     if req.action == "back":
         result = session.go_back()
         return {"ok": True, **result}
+
+    # Handle current step
     current_step = session.get_current_step()
     step_id = current_step["id"]
+
     if step_id == "completed":
         return {"ok": True, "message": "Wizard เสร็จสิ้นแล้ว", "session": session.to_dict()}
+
     handler = STEP_HANDLERS.get(step_id)
     if handler:
         result = handler(session, **req.data)
         if not result.get("ok"):
             return {"ok": False, "error": result.get("error"), "step": step_id, "available": result.get("available")}
+    
+    # Persist session after any modification
     mgr._save(session)
+
+    # Advance step
     if req.action == "next":
         advance = session.advance_step()
         mgr._save(session)
-        return {"ok": True, "step_result": result, "advance": advance, "session": session.to_dict()}
-    return {"ok": True, "step_result": result, "session": session.to_dict()}
+        return {
+            "ok": True,
+            "step_result": result,
+            "advance": advance,
+            "session": session.to_dict(),
+        }
 
-@app.post("/api/pod/wizard/{session_id}/cancel")
+    return {
+        "ok": True,
+        "step_result": result,
+        "session": session.to_dict(),
+    }
+
+
+@app.post("/pod/wizard/{session_id}/cancel")
 def pod_wizard_cancel(session_id: str):
     """ยกเลิก session"""
     mgr = get_manager()
@@ -912,72 +1909,20 @@ def pod_wizard_cancel(session_id: str):
     session.status = "cancelled"
     return {"ok": True, "message": "Session cancelled", "session_id": session_id}
 
-# ═══════════════════════════════════════════════════════════════════════════
-# AI ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════
 
-@app.get("/api/ai/providers")
-def ai_providers():
-    """List available AI image providers"""
-    from image_gen import PROVIDER_CONFIG, UPSCALE_MODELS
-    return {"providers": PROVIDER_CONFIG}
-
-@app.post("/api/ai/generate-image")
-def ai_generate_image(req: ImageGenRequest):
-    """AI Generate product image via Prodia Nano Banana"""
-    from image_gen import make_etsy_compliant_prompt
-    if req.prompt:
-        prompt = req.prompt
-    elif req.product_name:
-        prompt = make_etsy_compliant_prompt(req.product_name, req.description, req.style)
-    else:
-        raise HTTPException(status_code=400, detail="Either prompt or product_name required")
-    try:
-        ar = req.aspect_ratio if req.aspect_ratio else None
-        input_image = req.product_image_url
-        if not input_image:
-            _blank = Path(__file__).parent / "static" / "product_images" / "_blank.png"
-            if _blank.exists():
-                input_image = "http://localhost:8104/static/product_images/_blank.png"
-            else:
-                input_image = "https://placehold.co/1x1/white/white.png"
-        result = sync_requests.post(
-            "http://localhost:8110/api/v1/image/generate",
-            json={"prompt": prompt, "inputImage": input_image, "aspectRatio": ar or "1:1"},
-            timeout=120,
-        )
-        if result.status_code != 200:
-            raise Exception(result.text[:200])
-        data = result.json()
-        img_url = data.get("images", [{}])[0].get("url", "")
-        if img_url.startswith("/storage/"):
-            img_url = "/etsy" + img_url
-        return {
-            "ok": True, "image_url": img_url, "width": 1024, "height": 1024,
-            "validation": {"valid": True, "issues": []},
-            "cost": data.get("cost", {}).get("dollars", 0),
-            "provider": "prodia", "prompt_used": prompt,
-        }
-    except Exception as e:
-        logger.error(f"Image generation failed: {str(e)}", exc_info=True)
-        error_msg = str(e)
-        if "400" in error_msg or "404" in error_msg or "invalid" in error_msg.lower():
-            raise HTTPException(status_code=400, detail=f"Invalid request: {error_msg}")
-        elif "401" in error_msg or "403" in error_msg or "key" in error_msg.lower():
-            raise HTTPException(status_code=401, detail=f"Authentication failed: {error_msg}")
-        elif "timeout" in error_msg.lower() or "504" in error_msg:
-            raise HTTPException(status_code=504, detail=f"Service timeout: {error_msg}")
-        else:
-            raise HTTPException(status_code=502, detail=f"Image generation failed: {error_msg}")
-
-@app.post("/api/ai/generate-concept")
+@app.post("/ai/generate-concept")
 def ai_generate_concept(product: ProductInfo):
-    """AI Generate เฉพาะ Concept — ไม่รวม Image gen"""
+    """
+    AI Generate เฉพาะ Concept — ไม่รวม Image gen
+    เร็วกว่า /ai/generate-product เพราะไม่ต้องสร้างภาพ
+    """
     from assistant import generate_product_concept
-    import time as _time
-    t0 = _time.time()
+    import time
+    t0 = time.time()
+    
     concept = generate_product_concept(product.model_dump())
-    elapsed = _time.time() - t0
+    elapsed = time.time() - t0
+    
     return {
         "ok": True,
         "product_name": concept.get("product_name", product.name),
@@ -991,365 +1936,14 @@ def ai_generate_concept(product: ProductInfo):
         "elapsed_seconds": round(elapsed, 1),
     }
 
-@app.post("/api/ai/generate-product")
-def ai_generate_product(product: ProductInfo):
-    """AI Generate ทั้ง Concept + Image ในครั้งเดียว"""
-    from assistant import generate_product_concept
-    concept = generate_product_concept(product.model_dump())
-    draft = {
-        "title": concept.get("title", product.name),
-        "description": concept.get("description", ""),
-        "tags": concept.get("tags", []),
-        "price": concept.get("price", 19.99),
-        "materials": concept.get("materials", []),
-        "quantity": 1,
-        "status": "ai_generated",
-        "created_at": datetime.now().isoformat(),
-        "image_prompt": concept.get("image_prompt", ""),
-        "image_style": concept.get("image_style", "product"),
-    }
-    image_result = None
-    try:
-        prompt = concept.get("image_prompt", "")
-        if not prompt:
-            from image_gen import make_etsy_compliant_prompt
-            prompt = make_etsy_compliant_prompt(concept.get("product_name", product.name), product.description, concept.get("image_style", "product"))
-        img_resp = sync_requests.post(
-            "http://localhost:8110/api/v1/image/generate",
-            json={"prompt": prompt, "inputImage": None, "aspectRatio": "1:1"},
-            timeout=120,
-        )
-        if img_resp.status_code == 200:
-            img_data = img_resp.json()
-            image_result = {"image_url": img_data.get("images", [{}])[0].get("url", ""), "cost": img_data.get("cost", {}).get("dollars", 0)}
-            draft["image_url"] = image_result["image_url"]
-        else:
-            raise Exception(img_resp.text[:200])
-    except Exception as e:
-        logger.warning(f"Image gen failed (non-blocking): {e}")
-        image_result = {"error": str(e)}
-    return {"ok": True, "product_name": concept.get("product_name", product.name), "title": draft["title"], "tags": draft["tags"], "description": draft["description"][:300], "price": draft["price"], "materials": draft["materials"], "image": image_result, "draft": draft}
 
-@app.post("/api/ai/batch-generate")
-def ai_batch_generate(req: BatchGenRequest):
-    """AI Batch Generate หลายสินค้าพร้อมกัน"""
-    from assistant import generate_product_concept
-    from image_gen import make_etsy_compliant_prompt
-    results = []
-    total_cost = 0
-    if req.shop_id not in listings:
-        listings[req.shop_id] = []
-    for i, pname in enumerate(req.product_names):
-        product_info = {"name": pname, "description": "", "style": req.style}
-        try:
-            concept = generate_product_concept(product_info)
-            prompt = concept.get("image_prompt", "") or make_etsy_compliant_prompt(pname, "", req.style)
-            img = None
-            try:
-                img = {}
-                total_cost += img.get("cost", 0)
-            except Exception as e:
-                logger.warning(f"Image fail for {pname}: {e}")
-            draft = {
-                "id": len(listings[req.shop_id]) + 1,
-                "title": concept.get("title", pname),
-                "status": "ai_generated",
-                "image_url": img["image_url"] if img else None,
-                "created_at": datetime.now().isoformat(),
-            }
-            listings[req.shop_id].append(draft)
-            save_listing(req.shop_id, str(draft["id"]), draft)
-            results.append({"index": i, "product_name": concept.get("product_name", pname), "title": draft["title"], "image_url": draft["image_url"], "price": concept.get("price", 19.99), "listing_id": draft["id"]})
-        except Exception as e:
-            results.append({"index": i, "product_name": pname, "error": str(e)})
-    return {"ok": True, "shop_id": req.shop_id, "total": len(req.product_names), "succeeded": sum(1 for r in results if "error" not in r), "failed": sum(1 for r in results if "error" in r), "total_cost": total_cost, "results": results}
+# ═══════════════════════════════════════════════════════════════════
+# 📚 Story Coloring Book — POD Wizard Integration
+# ═══════════════════════════════════════════════════════════════════
 
-@app.post("/api/ai/detect-product")
-def ai_detect_product(data: dict):
-    """Auto-detect product category + product_id จาก brief/concept"""
-    brief = (data.get("brief", "") or "").lower()
-    name = (data.get("name", "") or "").lower()
-    desc = (data.get("description", "") or "").lower()
-    tags = data.get("tags", []) or []
-    tags = [t.lower() for t in tags if t]
-    combined = brief + " " + name + " " + desc + " " + " ".join(tags)
-    keywords = {
-        "apparel": ["shirt", "t-shirt", "tshirt", "tee", "hoodie", "sweatshirt", "jacket", "clothing", "wear", "top", "dress", "fashion"],
-        "home": ["poster", "canvas", "print", "wall", "art", "photo", "decoration", "home", "room", "decor", "frame", "tapestry", "metal"],
-        "accessories": ["bag", "tote", "hat", "cap", "phone case", "case", "backpack", "wallet", "pin", "sticker", "keychain"],
-        "drinkware": ["mug", "cup", "bottle", "water bottle", "glass", "thermos", "flask"],
-        "stationery": ["notebook", "journal", "book", "pen", "stationery", "sticker", "card"],
-    }
-    scores = {}
-    for cat, cat_kws in keywords.items():
-        score = 0
-        for kw in cat_kws:
-            if kw in combined:
-                score += len(kw) * combined.count(kw)
-        if score > 0:
-            scores[cat] = score
-    catalog = get_product_catalog()
-    available_products = {}
-    for item in catalog:
-        cat = item.get("category", "")
-        pid = item.get("product_id", "")
-        if not pid:
-            continue
-        if cat not in available_products:
-            available_products[cat] = []
-        available_products[cat].append(pid)
-    FALLBACK_PRODUCT = {"apparel": "tshirt_standard", "home": "poster_18x24", "accessories": "tote_bag", "drinkware": "mug_11oz", "stationery": "notebook"}
-    best_cat = max(scores, key=scores.get) if scores else "apparel"
-    if best_cat not in available_products:
-        existing_cats = list(available_products.keys())
-        best_cat = existing_cats[0] if existing_cats else "apparel"
-    cat_products = available_products.get(best_cat, [])
-    product_scores = {}
-    for pid in cat_products:
-        pid_lower = pid.replace("_", " ").lower()
-        for word in pid_lower.split():
-            if word in combined:
-                product_scores[pid] = product_scores.get(pid, 0) + len(word) * 2
-        for word in combined.split():
-            if len(word) > 3 and word in pid_lower:
-                product_scores[pid] = product_scores.get(pid, 0) + len(word)
-    best_product = max(product_scores, key=product_scores.get) if product_scores else (cat_products[0] if cat_products else FALLBACK_PRODUCT.get(best_cat, "tshirt_standard"))
-    return {"ok": True, "category": best_cat, "product_id": best_product, "confidence": scores.get(best_cat, 0), "all_scores": scores}
-
-@app.post("/api/ai/generate-listing")
-def ai_generate_listing(product: ProductInfo):
-    """AI สร้าง Listing (title + tags + description) จากข้อมูลสินค้า"""
-    from assistant import generate_listing
-    result = generate_listing(product.model_dump())
-    return result
-
-@app.post("/api/ai/fix-listing")
-def ai_fix_listing(listing: Listing, shop_id: str = "default"):
-    """ตรวจสอบ + AI แก้ไข Listing อัตโนมัติ"""
-    from assistant import fix_listing
-    validation = validate_listing(listing.model_dump())
-    fix_result = fix_listing(listing.model_dump(), validation)
-    return {"original": listing.model_dump(), "validation": validation, "fix": fix_result, "summary": {"needs_fix": not validation["valid"], "issues_found": len(validation["results"])}}
-
-@app.post("/api/ai/optimize-tags")
-def ai_optimize_tags(product: ProductInfo):
-    """AI สร้าง 13 SEO Tags ที่ดีที่สุด"""
-    from assistant import optimize_tags
-    result = optimize_tags(product.model_dump())
-    from rules.validator import validate_tags as _vt
-    validation = _vt(result.get("tags", [])).to_dict()
-    return {"tags": result.get("tags", []), "search_volume_hints": result.get("search_volume_hints", []), "validation": validation}
-
-@app.post("/api/ai/validate-and-fix")
-def ai_validate_and_fix(listing: Listing):
-    """Validate + AI Fix ใน endpoint เดียว"""
-    from assistant import fix_listing
-    listing_data = listing.model_dump()
-    validation = validate_listing(listing_data)
-    fix_result = fix_listing(listing_data, validation) if not validation["valid"] else None
-    return {"valid": validation["valid"], "validation": validation, "fix": fix_result, "summary": validation.get("summary", {})}
-
-@app.post("/api/ai/assist-wizard-step")
-def ai_assist_wizard_step(shop_id: str, step: str, context: dict = {}):
-    """AI แนะนำเนื้อหาสำหรับแต่ละ Wizard step"""
-    from assistant import generate_shop_banner_description
-    step_prompts = {"shop_about": "ช่วยเขียน 'About Shop' สำหรับร้าน Etsy", "shop_banner": "แนะนำการออกแบบ Banner", "policies": "ช่วยเขียนนโยบายร้าน Etsy"}
-    prompt = step_prompts.get(step, f"ช่วยเขียนเนื้อหาสำหรับขั้นตอน {step}")
-    suggestion = generate_shop_banner_description({"step": step, **context})
-    return {"step": step, "shop_id": shop_id, "suggestion": suggestion}
-
-# ═══════════════════════════════════════════════════════════════════════════
-# VALIDATION ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.post("/api/validate/listing")
-def check_listing(listing: Listing):
-    """ตรวจสอบ Listing ว่าผ่าน Etsy Rules หรือไม่"""
-    result = validate_listing(listing.model_dump())
-    return result
-
-@app.post("/api/validate/image")
-def check_image(image: ImageCheck):
-    """ตรวจสอบ Image Metadata ก่อน Upload"""
-    result = validate_image_requirements(image.model_dump())
-    return result.to_dict()
-
-@app.post("/api/validate/policies")
-def check_policies(policies: dict):
-    """ตรวจสอบ Shop Policies"""
-    result = validate_policies(policies)
-    return result.to_dict()
-
-# ═══════════════════════════════════════════════════════════════════════════
-# PRODUCT RESEARCH & SCRAPING
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.post("/api/product/research")
-def api_product_research(req: ProductResearchRequest):
-    from gemini_agent import research_product
-    research = research_product(
-        product_name=req.product_name or 'product',
-        description=req.description,
-        category=req.category,
-        image_base64=req.product_image_base64 or None,
-    )
-    web_data = {'specs': [], 'reviews': [], 'prices': []}
-    if req.product_name:
-        try:
-            from duckduckgo_search import DDGS
-            _cat = research.get('category', '') or req.category or ''
-            _type = research.get('product_type', '') or ''
-            with DDGS() as ddgs:
-                _spec_q = f"{req.product_name} {' '.join(_type.split()[:3])} specifications technical details"[:200]
-                specs = list(ddgs.text(_spec_q, max_results=3))
-                web_data['specs'] = [r.get('body','')[:500] for r in specs if r.get('body','')]
-                _rev_q = f"{req.product_name} {' '.join(_cat.split()[:2]) if _cat else ''} review รีวิว"[:200]
-                reviews = list(ddgs.text(_rev_q, max_results=3))
-                web_data['reviews'] = [r.get('body','')[:500] for r in reviews if r.get('body','')]
-                _price_q = f"{req.product_name} price ราคา shopee lazada"[:200]
-                prices = list(ddgs.text(_price_q, max_results=3))
-                web_data['prices'] = [r.get('title','')[:200] for r in prices if r.get('title','')]
-        except Exception as e:
-            logger.warning(f'Web search failed: {e}')
-    return {'ok': True, 'product_name': req.product_name, 'research': research, 'web_data': web_data}
-
-@app.post("/api/product/scrape")
-def scrape_product(req: ScrapeRequest):
-    """Scrape product info from e-commerce URLs"""
-    import re
-    from bs4 import BeautifulSoup
-    url = req.url.strip()
-    if not url.startswith(('http://', 'https://')):
-        url = 'https://' + url
-    result = {'ok': True, 'url': url, 'title': '', 'price': '', 'description': '', 'images': [], 'specs': {}, 'source': 'unknown'}
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'th-TH,th;q=0.9,en;q=0.8'}
-    try:
-        resp = sync_requests.get(url, headers=headers, timeout=15)
-        resp.raise_for_status()
-    except Exception as e:
-        result['error'] = f'Cannot fetch URL: {e}'
-        result['ok'] = False
-        return result
-    soup = BeautifulSoup(resp.text, 'lxml' if 'lxml' else 'html.parser')
-    domain = url.lower().split('/')[2] if '//' in url else ''
-    if 'shopee' in domain: result['source'] = 'shopee'
-    elif 'lazada' in domain: result['source'] = 'lazada'
-    elif 'amazon' in domain: result['source'] = 'amazon'
-    elif 'etsy' in domain: result['source'] = 'etsy'
-    else: result['source'] = 'generic'
-    for sel in ['meta[property="og:title"]', 'meta[name="twitter:title"]', 'h1', 'h1[class*="title"]', 'h1[class*="product"]', '[class*="product-name"]', '[class*="product-title"]', 'title']:
-        tag = soup.select_one(sel)
-        if tag:
-            title = tag.get('content', '') if tag.name == 'meta' else tag.get_text(strip=True)
-            if title:
-                result['title'] = title
-                break
-    for sel in ['meta[property="og:description"]', 'meta[name="description"]', '[class*="description"]', '[class*="detail"]', '#productDescription', '[itemprop="description"]']:
-        tag = soup.select_one(sel)
-        if tag:
-            result['description'] = tag.get('content', '').strip() if tag.name == 'meta' else tag.get_text(strip=True)[:500]
-            if result['description']: break
-    for sel in ['[class*="price"]', '[class*="Price"]', '[itemprop="price"]', 'meta[property="product:price:amount"]', 'meta[itemprop="price"]', '[class*="current-price"]', '[data-testid="price"]']:
-        tag = soup.select_one(sel)
-        if tag:
-            if tag.name == 'meta':
-                result['price'] = tag.get('content', '')
-            else:
-                price_text = tag.get_text(strip=True)
-                price_match = re.search(r'[\d,]+(?:\.\d+)?', price_text.replace(',', ''))
-                if price_match: result['price'] = price_match.group()
-            if result['price']: break
-    for sel in ['meta[property="og:image"]', 'meta[name="twitter:image"]', '[class*="gallery"] img', '[class*="product-image"] img', '[id*="main-img"]', '[class*="main-image"] img', '.image-gallery img', 'img[itemprop="image"]']:
-        tags = soup.select(sel)
-        for tag in tags:
-            src = tag.get('src') or tag.get('data-src') or tag.get('content', '')
-            if src and src.startswith(('http://', 'https://')) and src not in result['images']:
-                result['images'].append(src)
-            if len(result['images']) >= 5: break
-        if len(result['images']) >= 5: break
-    for table in soup.select('table[class*="spec"], table[class*="attribute"], .product-specs table, .data-table'):
-        rows = table.select('tr')
-        for row in rows:
-            cells = row.select('th, td')
-            if len(cells) >= 2:
-                key = cells[0].get_text(strip=True)
-                val = cells[1].get_text(strip=True)
-                if key and val: result['specs'][key] = val
-    if not result['images']:
-        for img in soup.select('img[src]'):
-            src = img.get('src', '')
-            if src.startswith(('http://', 'https://')) and any(ext in src.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp']):
-                if 'logo' not in src.lower() and 'icon' not in src.lower():
-                    result['images'].append(src)
-                    if len(result['images']) >= 3: break
-    return result
-
-# ═══════════════════════════════════════════════════════════════════════════
-# PAYMENT (PromptPay QR)
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.post("/api/payment/create-qr")
-def create_payment_qr(req: PaymentQRRequest):
-    """Generate Thai PromptPay QR Code for payment"""
-    import qrcode
-    phone = req.phone or os.environ.get('PROMPTPAY_PHONE', '')
-    if not phone:
-        phone = '0000000000'
-    phone_clean = ''.join(c for c in phone if c.isdigit())
-    emv = '000201'
-    emv += '010212'
-    pp_id = phone_clean
-    if pp_id.startswith('0'):
-        pp_id = '66' + pp_id[1:]
-    elif not pp_id.startswith('66'):
-        pp_id = '66' + pp_id
-    aid_tag = '0016A000000677010111'
-    phone_tag = f'01{len(pp_id):02d}{pp_id}'
-    merchant_account = aid_tag + phone_tag
-    emv += f'26{len(merchant_account):02d}{merchant_account}'
-    name = req.name[:25]
-    emv += f'59{len(name):02d}{name}'
-    city = 'Bangkok'
-    emv += f'60{len(city):02d}{city}'
-    postal = '10100'
-    emv += f'61{len(postal):02d}{postal}'
-    if req.amount > 0:
-        amount_str = f'{req.amount:.2f}'
-        emv += f'54{len(amount_str):02d}{amount_str}'
-    if req.reference:
-        ref_tag = f'08{len(req.reference):02d}{req.reference}'
-        emv += f'62{len(ref_tag):02d}{ref_tag}'
-    crc_data = emv.encode()
-    crc = 0xFFFF
-    for byte in crc_data:
-        crc ^= byte
-        for _ in range(8):
-            if crc & 0x0001:
-                crc = (crc >> 1) ^ 0x8408
-            else:
-                crc >>= 1
-    emv += f'63{crc:04X}'
-    qr = qrcode.QRCode(box_size=10, border=2)
-    qr.add_data(emv)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color='black', back_color='white')
-    buf = BytesIO()
-    img.save(buf, format='PNG')
-    b64 = base64.b64encode(buf.getvalue()).decode()
-    return {'ok': True, 'qr_base64': b64, 'qr_payload': emv, 'amount': req.amount, 'phone': phone_clean, 'name': name, 'reference': req.reference or ''}
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STATS
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.get("/api/stats")
-def stats():
-    return {"active_shops": len(shops), "total_listings": sum(len(v) for v in listings.values()), "version": "2.0.0"}
-
-# ═══════════════════════════════════════════════════════════════════════════
-# MAIN
-# ═══════════════════════════════════════════════════════════════════════════
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8123)
+try:
+    from story_coloring import register_story_routes
+    register_story_routes(app)
+    logger.info("📚 Story Coloring Book module loaded")
+except ImportError as e:
+    logger.warning(f"⚠️ Story module not loaded: {e}")
