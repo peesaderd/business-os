@@ -117,7 +117,7 @@ def rembg_sync(
     headers = {
         "Authorization": f"Bearer {PRODIA_TOKEN}",
         "Content-Type": f"multipart/form-data; boundary={boundary}",
-        "Accept": "image/png",
+        "Accept": "multipart/form-data",
     }
 
     req = urllib.request.Request(API_SYNC, data=body, headers=headers, method="POST")
@@ -134,7 +134,17 @@ def rembg_sync(
                 "method": "sync"}
 
     out = _resolve_output(output_path)
-    out.write_bytes(data)
+
+    # Prodia returns multipart/form-data with foreground.png + mask.png
+    if data[:2] == b'\r\n' or b'Content-Disposition' in data[:200] or b'multipart' in ct:
+        fg_path, mask_path = _parse_multipart_foreground(data, out)
+        if fg_path is None:
+            # Not multipart — write raw as fallback
+            out.write_bytes(data)
+        else:
+            out = fg_path
+    else:
+        out.write_bytes(data)
 
     return {
         "ok": True,
@@ -144,6 +154,7 @@ def rembg_sync(
         "method": "sync",
         "price_usd": None,
         "price_note": f"sync endpoint doesn't return price (estimated ${PRICE_USD})",
+        "mask_path": str(out.with_suffix('.mask.png')) if (out.with_suffix('.mask.png')).exists() else None,
     }
 
 
@@ -317,6 +328,48 @@ def _resolve_output(output_path):
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
     return Path(f"/home/openhands/.openclaw/workspace/rembg_{uuid.uuid4().hex[:8]}.png")
+
+
+def _parse_multipart_foreground(raw: bytes, out_path: Path):
+    """
+    Parse Prodia BiRefNet multipart/form-data response.
+
+    Response contains 3 parts:
+      1. job.json (echo)
+      2. foreground.png  ← the main output (RGBA with transparency)
+      3. mask.png        ← alpha mask
+
+    Returns (fg_path, mask_path) — both written. Returns (None, None) on parse fail.
+    """
+    import re as _re
+    import email as _email
+    from email.parser import BytesParser as _BP
+
+    m = _re.match(rb'--([a-f0-9]+)\r\n', raw)
+    if not m:
+        return None, None
+    boundary = m.group(1).decode()
+    hdr = f'Content-Type: multipart/form-data; boundary={boundary}\r\nMIME-Version: 1.0\r\n\r\n'
+    try:
+        msg = _BP().parsebytes(hdr.encode() + raw)
+    except Exception:
+        return None, None
+    if not msg.is_multipart():
+        return None, None
+
+    fg_path, mask_path = None, None
+    for part in msg.get_payload():
+        cd = part.get('Content-Disposition', '')
+        payload = part.get_payload(decode=True)
+        if not isinstance(payload, bytes):
+            continue
+        if 'name="output"' in cd and 'foreground' in cd and payload[:4] == b'\x89PNG':
+            fg_path = out_path
+            fg_path.write_bytes(payload)
+        elif 'name="output"' in cd and 'mask' in cd and payload[:4] == b'\x89PNG':
+            mask_path = out_path.with_suffix('.mask.png')
+            mask_path.write_bytes(payload)
+    return fg_path, mask_path
 
 
 # ═══════════════════════════════════════════════════════════════════════════

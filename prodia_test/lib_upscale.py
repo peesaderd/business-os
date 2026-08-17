@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """
-lib_upscale.py — Prodia R-ESRGAN upscale wrapper.
+lib_upscale.py — Prodia upscale wrapper (R-ESRGAN backend).
 
 Pricing (verified 2026-08-17):
-  - R-ESRGAN 2x       = $0.0010
-  - R-ESRGAN 4x       = $0.0020
-  - R-ESRGAN 8x       = $0.0030
+  - 2x       = $0.0010
+  - 4x       = $0.0020
+  - 8x       = $0.0030
+
+Backend: `inference.upscale.v1` with R-ESRGAN model.
+  - Config: {"image": "...", "upscale": 2|4|8}
+  - Note: `inference.resrgan.upscale.v1` and `inference.hypir.upscale.v1`
+    both rejected with "unknown job type" (2026-08-17 test).
+  - Working job_type: `inference.upscale.v1` (R-ESRGAN inside)
 
 HYPIR (diffusion-based, $0.05) was removed 2026-08-17 per user:
   - 50x more expensive than R-ESRGAN
@@ -47,7 +53,7 @@ if not PRODIA_TOKEN:
 # ── Model (R-ESRGAN only — HYPIR removed 2026-08-17) ──────────────────────
 
 MODEL = {
-    "job_type": "inference.resrgan.upscale.v1",
+    "job_type": "inference.upscale.v1",   # R-ESRGAN backend (2026-08-17 verified)
     "scales":   [2, 4, 8],
     "price":    {2: 0.0010, 4: 0.0020, 8: 0.0030},
 }
@@ -94,8 +100,8 @@ def upscale_sync(
     if not p.exists():
         return {"ok": False, "error": f"input not found: {p}", "method": "sync"}
 
-    config = {"image": p.name, "scale": scale}
-    job = {"type": job_type, "config": config, "name": f"upscale_resrgan_{scale}x"}
+    config = {"image": p.name, "upscale": scale}
+    job = {"type": job_type, "config": config, "name": f"upscale_{scale}x"}
 
     boundary = _make_boundary()
     body = b""
@@ -156,8 +162,8 @@ def upscale_async(
     if not p.exists():
         return {"ok": False, "error": f"input not found: {p}", "method": "async"}
 
-    config = {"image": p.name, "scale": scale}
-    job = {"type": job_type, "config": config, "name": f"upscale_resrgan_{scale}x"}
+    config = {"image": p.name, "upscale": scale}
+    job = {"type": job_type, "config": config, "name": f"upscale_{scale}x"}
 
     boundary = _make_boundary()
     body = b""
