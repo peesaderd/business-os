@@ -1,25 +1,18 @@
 #!/usr/bin/env python3
 """
-lib_upscale.py — Prodia R-ESRGAN upscale wrapper.
+lib_rembg.py — Prodia BiRefNet 2 background removal.
 
-Pricing (verified 2026-08-17):
-  - R-ESRGAN 2x       = $0.0010
-  - R-ESRGAN 4x       = $0.0020
-  - R-ESRGAN 8x       = $0.0030
+Locked-in per card aa737252:
+  inference.birefnet.segment.v1   $0.0025/image
+  (replaces inference.remove-background.v1 $0.02 — 8x cheaper)
 
-HYPIR (diffusion-based, $0.05) was removed 2026-08-17 per user:
-  - 50x more expensive than R-ESRGAN
-  - Not worth it for cover pipeline frames
-  - Removed to avoid accidental expensive calls
-
-Per card aa737252: R-ESRGAN 2x is the sole upscale option.
+Returns transparent PNG (RGBA, white background masked out).
 
 Usage:
-    from lib_upscale import upscale, MODEL
+    from lib_rembg import rembg, rembg_sync, rembg_async
 
-    result = upscale("input.jpg", "output.png", scale=2)
-
-Returns dict with: ok, output_path, bytes, scale, price_usd, method
+    result = rembg_sync("input.jpg", "output.png")
+    result = rembg_async("input.jpg", "output.png")  # returns price
 """
 from __future__ import annotations
 import os, sys, json, uuid, time
@@ -29,7 +22,7 @@ from typing import Optional, Union
 
 # ── Token ──────────────────────────────────────────────────────────────────
 
-PRODIA_TOKEN = "X"
+PRODIA_TOKEN = ""
 _ENV_PATH = "/home/openhands/erp-stack/.env"
 if os.path.exists(_ENV_PATH):
     with open(_ENV_PATH) as f:
@@ -40,29 +33,28 @@ if os.path.exists(_ENV_PATH):
 if not PRODIA_TOKEN:
     PRODIA_TOKEN = os.environ.get("PRODIA_TOKEN", "")
 if not PRODIA_TOKEN:
-    print("PRODIA_TOKEN not found (check /home/openhands/erp-stack/.env)", file=sys.stderr)
+    print("❌ PRODIA_TOKEN not found (check /home/openhands/erp-stack/.env)", file=sys.stderr)
     sys.exit(1)
 
 
-# ── Model (R-ESRGAN only — HYPIR removed 2026-08-17) ──────────────────────
-
-MODEL = {
-    "job_type": "inference.resrgan.upscale.v1",
-    "scales":   [2, 4, 8],
-    "price":    {2: 0.0010, 4: 0.0020, 8: 0.0030},
-}
-
-DEFAULT_SCALE = 2
+# ── Constants ──────────────────────────────────────────────────────────────
 
 API_SYNC  = "https://inference.prodia.com/v2/job"
 API_ASYNC = "https://inference.prodia.com/v2/job/async"
+
+PRICE_USD = 0.0025  # BiRefNet 2
+JOB_TYPE  = "inference.birefnet.segment.v1"
+
+# Optional contour refinement (helps with fuzzy edges like hair, fabric)
+# Per docs: {"contour": true, "contour_tolerance": <0-255>}
+# Default: no contour (cheapest)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Multipart helpers
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _make_boundary(tag: str = "Upscale") -> str:
+def _make_boundary(tag: str = "RemBG") -> str:
     return f"----{tag}{uuid.uuid4().hex[:8]}"
 
 
@@ -74,28 +66,47 @@ def _part(boundary: str, name: str, filename: str, ctype: str, data) -> bytes:
     return b
 
 
+def _mime(ext: str) -> str:
+    return {
+        ".png":  "image/png",
+        ".jpg":  "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+    }.get(ext.lower(), "application/octet-stream")
+
+
 # ═══════════════════════════════════════════════════════════════════════════
-# Sync entry — fastest, no price (default for R-ESRGAN)
+# Sync entry — fastest, no price returned
 # ═══════════════════════════════════════════════════════════════════════════
 
-def upscale_sync(
+def rembg_sync(
     input_path: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
-    scale: int = DEFAULT_SCALE,
+    contour: bool = False,
+    contour_tolerance: int = 0,
     timeout: int = 180,
 ) -> dict:
     """
-    Sync R-ESRGAN upscale. Returns image bytes directly.
-    scale: 2, 4, or 8
-    """
-    job_type, price = _validate_scale(scale)
+    Sync BiRefNet 2 background removal. Returns PNG bytes directly.
 
+    contour: edge refinement pass (helps hair/fabric edges; default off)
+    contour_tolerance: 0-255 (used only when contour=True)
+    """
     p = Path(input_path)
     if not p.exists():
         return {"ok": False, "error": f"input not found: {p}", "method": "sync"}
 
-    config = {"image": p.name, "scale": scale}
-    job = {"type": job_type, "config": config, "name": f"upscale_resrgan_{scale}x"}
+    config = {"image": p.name}
+    if contour:
+        config["contour"] = True
+        if contour_tolerance:
+            config["contour_tolerance"] = contour_tolerance
+
+    job = {
+        "type": JOB_TYPE,
+        "config": config,
+        "name": f"rembg_{p.stem}",
+    }
 
     boundary = _make_boundary()
     body = b""
@@ -120,9 +131,9 @@ def upscale_sync(
         except Exception:
             err_body = "<no body>"
         return {"ok": False, "error": f"HTTP {e.code}", "body": err_body,
-                "method": "sync", "scale": scale}
+                "method": "sync"}
 
-    out = _resolve_output(output_path, scale)
+    out = _resolve_output(output_path)
     out.write_bytes(data)
 
     return {
@@ -131,9 +142,8 @@ def upscale_sync(
         "bytes": len(data),
         "content_type": ct,
         "method": "sync",
-        "scale": scale,
         "price_usd": None,
-        "price_note": f"sync endpoint doesn't return price (estimated ${price})",
+        "price_note": f"sync endpoint doesn't return price (estimated ${PRICE_USD})",
     }
 
 
@@ -141,23 +151,31 @@ def upscale_sync(
 # Async entry — returns real price
 # ═══════════════════════════════════════════════════════════════════════════
 
-def upscale_async(
+def rembg_async(
     input_path: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
-    scale: int = DEFAULT_SCALE,
+    contour: bool = False,
+    contour_tolerance: int = 0,
     timeout: int = 180,
     poll_max_retries: int = 60,
     poll_delay: float = 2.0,
 ) -> dict:
-    """Async R-ESRGAN upscale. Returns real price."""
-    job_type, _ = _validate_scale(scale)
-
+    """Async BiRefNet 2 background removal. Returns real price."""
     p = Path(input_path)
     if not p.exists():
         return {"ok": False, "error": f"input not found: {p}", "method": "async"}
 
-    config = {"image": p.name, "scale": scale}
-    job = {"type": job_type, "config": config, "name": f"upscale_resrgan_{scale}x"}
+    config = {"image": p.name}
+    if contour:
+        config["contour"] = True
+        if contour_tolerance:
+            config["contour_tolerance"] = contour_tolerance
+
+    job = {
+        "type": JOB_TYPE,
+        "config": config,
+        "name": f"rembg_{p.stem}",
+    }
 
     boundary = _make_boundary()
     body = b""
@@ -182,7 +200,7 @@ def upscale_async(
         except Exception:
             err_body = "<no body>"
         return {"ok": False, "error": f"HTTP {e.code}", "body": err_body,
-                "method": "async", "scale": scale}
+                "method": "async"}
 
     job_id = None
     price_usd = None
@@ -194,16 +212,16 @@ def upscale_async(
             price_usd = po.get("dollars")
     except json.JSONDecodeError:
         if data[:2] == b"\xff\xd8" or data[:4] == b"\x89PNG":
-            out = _resolve_output(output_path, scale)
+            out = _resolve_output(output_path)
             out.write_bytes(data)
             return {"ok": True, "output_path": str(out), "bytes": len(data),
-                    "scale": scale, "method": "async_image_inline", "price_usd": None}
+                    "method": "async_image_inline", "price_usd": None}
         return {"ok": False, "error": "Async non-JSON response",
                 "body": data[:200].decode("utf-8", errors="replace"),
-                "method": "async", "scale": scale}
+                "method": "async"}
 
     if not job_id:
-        return {"ok": False, "error": "No job_id", "method": "async", "scale": scale}
+        return {"ok": False, "error": "No job_id", "method": "async"}
 
     # Poll
     state_url = f"{API_ASYNC}/{job_id}/job.state.current"
@@ -216,16 +234,16 @@ def upscale_async(
         except Exception:
             continue
         if status != last_status:
-            print(f"[upscale_async poll] attempt={attempt} status={status}", file=sys.stderr)
+            print(f"[rembg_async poll] attempt={attempt} status={status}", file=sys.stderr)
             last_status = status
         if status == "processed":
             break
         if status == "failed":
             return {"ok": False, "error": "Job failed", "job_id": job_id,
-                    "method": "async", "scale": scale}
+                    "method": "async"}
     else:
         return {"ok": False, "error": "Poll timeout", "job_id": job_id,
-                "method": "async", "scale": scale}
+                "method": "async"}
 
     # Fetch price
     try:
@@ -248,7 +266,7 @@ def upscale_async(
 
     if not (isinstance(filenames, list) and filenames):
         return {"ok": False, "error": "No output file", "job_id": job_id,
-                "method": "async", "scale": scale, "price_usd": price_usd}
+                "method": "async", "price_usd": price_usd}
 
     fname = filenames[0]
     download_url = fname if fname.startswith("http") else f"{API_ASYNC}/{job_id}/output/{fname}"
@@ -257,9 +275,9 @@ def upscale_async(
             img_bytes = r.read()
     except Exception as e:
         return {"ok": False, "error": f"Download failed: {e}", "job_id": job_id,
-                "method": "async", "scale": scale, "price_usd": price_usd}
+                "method": "async", "price_usd": price_usd}
 
-    out = _resolve_output(output_path, scale)
+    out = _resolve_output(output_path)
     out.write_bytes(img_bytes)
 
     return {
@@ -267,7 +285,6 @@ def upscale_async(
         "output_path": str(out),
         "bytes": len(img_bytes),
         "method": "async",
-        "scale": scale,
         "price_usd": price_usd,
         "job_id": job_id,
     }
@@ -277,47 +294,29 @@ def upscale_async(
 # Dispatcher
 # ═══════════════════════════════════════════════════════════════════════════
 
-def upscale(
+def rembg(
     input_path: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
-    scale: int = DEFAULT_SCALE,
+    contour: bool = False,
+    contour_tolerance: int = 0,
     method: str = "sync",
 ) -> dict:
     """Convenience dispatcher (sync by default)."""
     if method == "async":
-        return upscale_async(input_path, output_path, scale)
-    return upscale_sync(input_path, output_path, scale)
+        return rembg_async(input_path, output_path, contour, contour_tolerance)
+    return rembg_sync(input_path, output_path, contour, contour_tolerance)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Internal helpers
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _validate_scale(scale: int):
-    if scale not in MODEL["scales"]:
-        raise ValueError(f"scale {scale}x not supported; allowed: {MODEL['scales']}")
-    return MODEL["job_type"], MODEL["price"][scale]
-
-
-_MIME_BY_EXT = {
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".webp": "image/webp",
-    ".gif": "image/gif",
-}
-
-
-def _mime(ext):
-    return _MIME_BY_EXT.get(ext.lower(), "application/octet-stream")
-
-
-def _resolve_output(output_path, scale):
+def _resolve_output(output_path):
     if output_path:
         p = Path(output_path)
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
-    return Path(f"/home/openhands/.openclaw/workspace/upscale_resrgan_{scale}x_{uuid.uuid4().hex[:8]}.png")
+    return Path(f"/home/openhands/.openclaw/workspace/rembg_{uuid.uuid4().hex[:8]}.png")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -326,14 +325,16 @@ def _resolve_output(output_path, scale):
 
 if __name__ == "__main__":
     import argparse
-    ap = argparse.ArgumentParser(description="lib_upscale smoke test (R-ESRGAN only)")
+    ap = argparse.ArgumentParser(description="lib_rembg smoke test")
     ap.add_argument("input", help="input image path")
-    ap.add_argument("--output", "-o", help="output path")
-    ap.add_argument("--scale", type=int, default=DEFAULT_SCALE,
-                    help="2, 4, or 8 (default 2)")
+    ap.add_argument("--output", "-o", help="output path (PNG with transparency)")
+    ap.add_argument("--contour", action="store_true",
+                    help="enable edge refinement (hair/fabric)")
+    ap.add_argument("--tolerance", type=int, default=0,
+                    help="contour tolerance 0-255 (with --contour)")
     ap.add_argument("--method", choices=["sync", "async"], default="sync")
     args = ap.parse_args()
 
-    res = upscale(args.input, args.output, args.scale, args.method)
+    res = rembg(args.input, args.output, args.contour, args.tolerance, args.method)
     print(json.dumps(res, indent=2))
     sys.exit(0 if res.get("ok") else 1)

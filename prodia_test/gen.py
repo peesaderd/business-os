@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gen.py — Universal Nano Banana image generator + optional upscale.
+gen.py — Universal Nano Banana image generator + optional upscale + rembg.
 
 Replaces 4 separate scripts:
   - prodia_test/gen_triptych.py
@@ -10,7 +10,8 @@ Replaces 4 separate scripts:
 
 Subcommands:
   gen      Generate image via Nano Banana (default)
-  upscale  Upscale via R-ESRGAN/HYPIR
+  upscale  Upscale via R-ESRGAN (2x/4x/8x)
+  rembg    Background removal via BiRefNet 2
   list     List available presets
 
 Usage examples:
@@ -23,9 +24,12 @@ Usage examples:
 
   upscale:
     gen.py upscale input.jpg -o out.png                # R-ESRGAN 2x default
-    gen.py upscale input.jpg -o out.png --model hypir  # HYPIR 2x ($0.05)
     gen.py upscale input.jpg -o out.png --scale 4      # R-ESRGAN 4x
-    gen.py upscale input.jpg -o out.png --method async --model hypir
+    gen.py upscale input.jpg -o out.png --method async
+
+  rembg:
+    gen.py rembg input.jpg -o out.png                  # BiRefNet 2
+    gen.py rembg input.jpg -o out.png --contour        # hair/fabric edge refinement
 """
 from __future__ import annotations
 import argparse, json, sys
@@ -35,7 +39,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from lib_nano_banana import generate, PRICE_USD  # noqa: E402
-from lib_upscale import upscale, MODELS as UPSCALE_MODELS  # noqa: E402
+from lib_upscale import upscale, MODEL as UPSCALE_MODEL, DEFAULT_SCALE  # noqa: E402
+from lib_rembg import rembg, PRICE_USD as REMBG_PRICE  # noqa: E402
 
 PRESETS_PATH = HERE / "prompts.json"
 WORKSPACE_ROOT = Path("/home/openhands/.openclaw/workspace")
@@ -135,22 +140,37 @@ def cmd_gen(args):
 # ═══════════════════════════════════════════════════════════════════════════
 
 def cmd_upscale(args):
-    model = args.model
-    scale = args.scale
-    # Validate
-    mp = UPSCALE_MODELS[model]
-    if scale not in mp["scales"]:
-        print(f"❌ scale {scale}x not supported by '{model}'; allowed: {mp['scales']}", file=sys.stderr)
+    scales = UPSCALE_MODEL["scales"]
+    if args.scale not in scales:
+        print(f"❌ scale {args.scale}x not supported; allowed: {scales}", file=sys.stderr)
         return 1
 
-    print(f"[upscale] input={args.input} output={args.output} model={model} "
-          f"scale={scale} method={args.method}", file=sys.stderr)
+    print(f"[upscale] input={args.input} output={args.output} scale={args.scale} "
+          f"method={args.method}", file=sys.stderr)
 
     result = upscale(
         input_path=args.input,
         output_path=args.output,
-        model=model,
-        scale=scale,
+        scale=args.scale,
+        method=args.method,
+    )
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("ok") else 1
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Subcommand: rembg
+# ═══════════════════════════════════════════════════════════════════════════
+
+def cmd_rembg(args):
+    print(f"[rembg] input={args.input} output={args.output} contour={args.contour} "
+          f"tolerance={args.tolerance} method={args.method}", file=sys.stderr)
+
+    result = rembg(
+        input_path=args.input,
+        output_path=args.output,
+        contour=args.contour,
+        contour_tolerance=args.tolerance,
         method=args.method,
     )
     print(json.dumps(result, indent=2))
@@ -171,10 +191,8 @@ def list_presets():
     for k, v in presets.items():
         print(f"  {k:30}  {v.get('description','')}")
     print(f"\nNano Banana image: ${PRICE_USD}/image (async endpoint)")
-    print("Upscale: " + ", ".join(
-        f"{k}={','.join(str(s)+'x' for s in v['scales'])}"
-        for k, v in UPSCALE_MODELS.items()
-    ))
+    print(f"Upscale R-ESRGAN: 2x=$0.001  4x=$0.002  8x=$0.003 (default 2x)")
+    print(f"RemBG BiRefNet 2: ${REMBG_PRICE}/image")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -199,16 +217,24 @@ def build_parser():
     pg.add_argument("--list", action="store_true", help="List presets")
 
     # upscale
-    pu = sub.add_parser("upscale", help="Upscale via R-ESRGAN/HYPIR")
+    pu = sub.add_parser("upscale", help="Upscale via R-ESRGAN")
     pu.add_argument("input", help="Input image path")
     pu.add_argument("-o", "--output", help="Output path")
-    pu.add_argument("--model", choices=list(UPSCALE_MODELS.keys()), default="resrgan",
-                    help="Default: resrgan (cheap). Use 'hypir' for highest quality.")
-    pu.add_argument("--scale", type=int, default=2,
-                    help="2x (default, both), 4x/8x (R-ESRGAN only)")
+    pu.add_argument("--scale", type=int, default=DEFAULT_SCALE,
+                    help=f"2 (default), 4, or 8")
     pu.add_argument("--method", choices=["sync", "async"], default="sync")
 
-    # list (top-level --list is also accepted)
+    # rembg
+    pr = sub.add_parser("rembg", help="Background removal via BiRefNet 2")
+    pr.add_argument("input", help="Input image path")
+    pr.add_argument("-o", "--output", help="Output path (PNG with transparency)")
+    pr.add_argument("--contour", action="store_true",
+                    help="enable edge refinement (hair/fabric)")
+    pr.add_argument("--tolerance", type=int, default=0,
+                    help="contour tolerance 0-255 (with --contour)")
+    pr.add_argument("--method", choices=["sync", "async"], default="sync")
+
+    # list (top-level)
     pl = sub.add_parser("list", help="List available presets")
 
     return p
@@ -222,6 +248,8 @@ def main():
         return cmd_gen(args)
     elif args.cmd == "upscale":
         return cmd_upscale(args)
+    elif args.cmd == "rembg":
+        return cmd_rembg(args)
     elif args.cmd == "list":
         list_presets()
         return 0
