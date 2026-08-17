@@ -1,0 +1,24 @@
+{
+    "template_id": "cover_triptych_v1",
+    "description": "16:9 cover divided into 3 vertical thirds: cover frame (left) + main shot (center) + end scene (right). Panel 1 becomes transparent overlay, Panel 2/3 are Wan2.7 FL2V source/target.",
+    "version": "1.0",
+    "engine": "string.format",
+    "aspect_ratio": "16:9",
+    "required_profile_fields": [
+        "name.en",
+        "category",
+        "image_ref",
+        "target_audience",
+        "tone"
+    ],
+    "defaults": {
+        "aspect_ratio": "16:9",
+        "style": "photorealistic magazine cover",
+        "shot_type": "magazine cover layout",
+        "angle": "eye level",
+        "depth_of_field": "shallow (f/2.8)",
+        "lighting": "soft rim light + golden hour tone"
+    },
+    "prompt_template": "A 16:9 magazine cover layout divided into 3 vertical thirds for {product_name}. LEFT THIRD (Panel 1 - Cover Frame): clean composition with empty space for graphic design elements, product name and logo placement. CENTER THIRD (Panel 2 - Main Shot): {model_desc} {action_phrase} {product_short} at eye level, centered in frame, looking at camera with direct eye contact, bright smile. RIGHT THIRD (Panel 3 - End Scene): {model_desc} in similar pose holding {product_short}, subtle smile, ready-to-use or result pose. Both center and right thirds show model with product. {scene_description}. {lighting_cap}. Style: {style}, 16:9 aspect ratio, vertical triptych composition.",
+    "negative_prompt": "blurry, low quality, deformed, watermark, text overlay, cropped face, ugly, disfigured, low resolution, bad anatomy, extra fingers, mutation, asymmetric panels, panels out of frame"
+}

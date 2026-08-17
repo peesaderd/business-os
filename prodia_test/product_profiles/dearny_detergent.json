@@ -1,0 +1,42 @@
+{
+    "product_id": "dearny_detergent",
+    "name": {
+        "th": "Dearny ผงซักฟอกเข้มข้น",
+        "en": "Dearny Concentrated Detergent"
+    },
+    "category": "household",
+    "subcategory": "laundry detergent",
+    "image_ref": "../media/inbound/14576---498a2aef-9f94-49e2-b862-a6280aec2b30.webp",
+    "key_features": [
+        "concentrated formula",
+        "stain removal",
+        "fresh scent",
+        "gentle on fabric"
+    ],
+    "target_audience": {
+        "gender": "female",
+        "age_range": "25-50",
+        "ethnicity": "Thai"
+    },
+    "tone": "clean, fresh, reliable",
+    "color_palette": {
+        "primary": "blue",
+        "secondary": "white",
+        "accent": "yellow"
+    },
+    "key_selling_points": [
+        "Removes tough stains in 1 wash",
+        "Concentrated — use 50% less",
+        "Long-lasting fresh scent"
+    ],
+    "tts_script": {
+        "voice": "Kore",
+        "language": "th",
+        "beats": {
+            "beat_1_hook": "คราบฝังลึกแบบนี้ ใครก็ไม่ไหวค่ะ",
+            "beat_2_value": "Dearny เข้มข้น ขจัดคราบได้ตั้งแต่ครั้งแรก",
+            "beat_3_ugc": "ใช้แค่ครึ่งฝา เสื้อสะอาดหอมฟรุ้งทั้งวัน",
+            "beat_4_cta": "คลิกเลย! สั่งวันนี้ส่งฟรี"
+        }
+    }
+}

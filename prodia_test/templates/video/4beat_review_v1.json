@@ -1,0 +1,50 @@
+{
+    "template_id": "4beat_review_v1",
+    "description": "4-beat video structure: hook → value → UGC → CTA. Each beat has script + action + camera. Visual + Audio sync.",
+    "version": "1.0",
+    "engine": "manual_beats",
+    "duration_seconds": 15,
+    "aspect_ratio": "9:16",
+    "defaults": {
+        "style": "TikTok-style UGC, talking head + product demo",
+        "transition": "cut"
+    },
+    "beats": {
+        "beat_1_hook": {
+            "name": "hook",
+            "time_start": 0,
+            "time_end": 4,
+            "action_default": "model looks at camera with concerned expression, holds product up to frame",
+            "camera_default": "close-up on face + product, slight handheld shake",
+            "script_template": "{script_text}",
+            "transition_to_next": "cut"
+        },
+        "beat_2_value": {
+            "name": "value",
+            "time_start": 4,
+            "time_end": 8,
+            "action_default": "model shows product texture/scent, gestures to camera",
+            "camera_default": "medium shot, slow push-in",
+            "script_template": "{script_text}",
+            "transition_to_next": "match cut"
+        },
+        "beat_3_ugc": {
+            "name": "ugc",
+            "time_start": 8,
+            "time_end": 12,
+            "action_default": "model applies product to face, demonstrates texture on skin",
+            "camera_default": "over-shoulder, pull back slightly",
+            "script_template": "{script_text}",
+            "transition_to_next": "cut"
+        },
+        "beat_4_cta": {
+            "name": "cta",
+            "time_start": 12,
+            "time_end": 15,
+            "action_default": "model points at camera, smiles, points down to where link will be",
+            "camera_default": "wide shot, static",
+            "script_template": "{script_text}",
+            "transition_to_next": "fade to black"
+        }
+    }
+}

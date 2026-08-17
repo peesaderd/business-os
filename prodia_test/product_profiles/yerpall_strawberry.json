@@ -1,0 +1,43 @@
+{
+    "product_id": "yerpall_strawberry",
+    "name": {
+        "th": "YERPALL Intensive Active Strawberry Serum",
+        "en": "YERPALL Strawberry Serum"
+    },
+    "category": "cosmetics",
+    "subcategory": "facial serum",
+    "image_ref": "../media/inbound/14679---d50ec0f0-c554-4fb6-9560-fdb4a45838a4.png",
+    "key_features": [
+        "strawberry extract",
+        "anti-aging",
+        "brightening",
+        "natural ingredients",
+        "intensive hydration"
+    ],
+    "target_audience": {
+        "gender": "female",
+        "age_range": "20-35",
+        "ethnicity": "Thai / Asian"
+    },
+    "tone": "fresh, natural, premium",
+    "color_palette": {
+        "primary": "pink",
+        "secondary": "red",
+        "accent": "white"
+    },
+    "key_selling_points": [
+        "Made from fresh strawberry extract",
+        "Reduces dark spots in 14 days",
+        "100% natural, no parabens"
+    ],
+    "tts_script": {
+        "voice": "Kore",
+        "language": "th",
+        "beats": {
+            "beat_1_hook": "ผิวหมองคล้ำแบบนี้ ใครก็ไม่ไหวค่ะ",
+            "beat_2_value": "เซรั่มสตรอว์เบอร์รีช่วยให้ผิวกระจ่างใส เนื้อบางเบา",
+            "beat_3_ugc": "ลองลงเซรั่มให้ดูนะคะ ซึมไวมาก �ู้สึกผิวชุ่มชื้นทันที",
+            "beat_4_cta": "คลิกเลย! วันนี้ลด 50% เท่านั้น"
+        }
+    }
+}
