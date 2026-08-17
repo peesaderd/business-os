@@ -1,78 +1,78 @@
-# prodia_test/ — unified image-gen pipeline (Nano Banana)
+# prodia_test/ — unified image-gen + upscale pipeline
 
-## What's here
+## Structure
 
 ```
 prodia_test/
-├── gen.py               # CLI entry (single command for everything)
-├── lib_nano_banana.py   # sync/async wrapper around `inference.nano-banana.img2img.v2`
-├── prompts.json         # preset library (triptych_dearny, shot_yerpall_strawberry)
-├── prompts/             # prompt text files
+├── gen.py               # CLI (gen + upscale + list subcommands)
+├── lib_nano_banana.py   # sync/async wrapper for inference.nano-banana.img2img.v2
+├── lib_upscale.py       # sync/async wrapper for HYPIR / R-ESRGAN upscale
+├── prompts.json         # preset library
+├── prompts/*.txt        # prompt text files
 ├── _archived/           # legacy scripts (do not use)
 │   ├── gen_triptych.py
 │   ├── gen_triptych_sync.py
 │   └── nanobanana_i2i.py
-└── ... (other unrelated scripts/dirs unchanged)
+└── README_NANO_BANANA.md
 ```
 
-## Quick start
+## Subcommands
 
-List presets:
+### `gen.py gen` — image generation (Nano Banana)
+
 ```bash
-python3 prodia_test/gen.py --list
+python3 prodia_test/gen.py list                        # show presets
+python3 prodia_test/gen.py gen --preset shot_yerpall_strawberry
+python3 prodia_test/gen.py gen --preset triptych_dearny --method async   # get price
+python3 prodia_test/gen.py gen --prompt "..." --ref product.png --out shot.jpg --aspect 16:9
+python3 prodia_test/gen.py gen --prompt "..." --ref banner.jpg --ref product.jpg --out out.jpg
+python3 prodia_test/gen.py --list                      # legacy top-level flag
 ```
 
-Run a preset:
+Pricing: **$0.039/image** (Nano Banana - Gemini 2.5 Flash, 1K)
+Endpoint: sync default (no price); pass `--method async` to track price.
+
+### `gen.py upscale` — upscale (HYPIR / R-ESRGAN)
+
 ```bash
-python3 prodia_test/gen.py --preset shot_yerpall_strawberry              # sync (default)
-python3 prodia_test/gen.py --preset shot_yerpall_strawberry --method async   # async (returns price)
+python3 prodia_test/gen.py upscale input.jpg                    # R-ESRGAN 2x default ($0.001)
+python3 prodia_test/gen.py upscale input.jpg -o out.png         # same with explicit output
+python3 prodia_test/gen.py upscale input.jpg --model hypir      # HYPIR 2x ($0.05)
+python3 prodia_test/gen.py upscale input.jpg --scale 4          # R-ESRGAN 4x ($0.002)
+python3 prodia_test/gen.py upscale input.jpg --model hypir --method async --scale 2
 ```
 
-Raw command:
-```bash
-python3 prodia_test/gen.py --prompt "..." --ref product.png --out shot.jpg --aspect 16:9
-python3 prodia_test/gen.py --prompt "..." --ref banner.jpg --ref product.jpg --out out.jpg
+| Model    | 2x        | 4x        | 8x        |
+|----------|-----------|-----------|-----------|
+| `resrgan` | $0.001    | $0.002    | $0.003    |
+| `hypir`   | **$0.05** | —         | —         |
+
+Default is `resrgan` 2x per card `aa737252` (cheapest path).
+
+### `gen.py list` — show presets + cost table
+
+## Pipeline integration (planned per workboard card `aa737252`)
+
+```
+Nano Banana (gen)     $0.039
+   ↓
+[optional] upscale  $0.001–0.05  (R-ESRGAN 2x default)
+   ↓
+cut 3 vertical thirds → Panel 1/2/3   (PIL, free)
+   ↓
+BiRefNet 2 (Panel 1)  $0.0025  → transparent frame layer
+   ↓
+Panel 2/3 → Wan2.7 first/last frames  (FL2V + Audio)
+   ↓
+FFmpeg compose cover  (free)
 ```
 
-## Endpoint choice
-
-- **sync** (default): `/v2/job` — direct image bytes, fastest, NO price returned
-- **async**: `/v2/job/async?price=true` — job_id + poll + price (`$0.039/image`)
-
-## Pricing
-
-Nano Banana (Gemini 2.5 Flash, 1K) = **$0.039/image** (verified Prodia docs 2026-08-17).
-
-## Adding a new preset
-
-Edit `prodia_test/prompts.json`:
-```json
-{
-  "comment": "...",
-  "my_new_preset": {
-    "description": "What this preset is for",
-    "prompt_file": "prompts/my_new.txt",
-    "negative_file": "prompts/my_new_neg.txt",
-    "aspect_ratio": "16:9",
-    "reference": "../media/inbound/some_product.png",
-    "output": "my_output.jpg"
-  }
-}
-```
-
-Path rules: paths in `prompts.json` resolve relative to `prodia_test/` for `prompt_file`/`negative_file`, and relative to `/home/openhands/.openclaw/workspace/` for `reference`/`output`.
+Total still-image phase: **$0.0425–$0.0915** per cover depending on upscale choice.
 
 ## What this replaces
 
 | Old script | New behavior |
 |---|---|
-| `gen_triptych.py` (async) | `gen.py --method async` |
-| `gen_triptych_sync.py` (sync) | `gen.py --method sync` |
-| `nanobanana_i2i.py` (banner + product reference) | `gen.py --ref banner.jpg --ref product.jpg` |
-
-## Next pipeline stages (TODO)
-
-1. `lib_hypir_upscale.py` — `inference.hypir.upscale.v1` ($0.001)
-2. `lib_birefnet_rembg.py` — `inference.birefnet.segment.v1` ($0.0025)
-3. Panel cutter (PIL/cv2, no cost)
-4. Orchestrator `cover_pipeline.py` that chains all 4 stages per `aa737252` card.
+| `gen_triptych.py` (async) | `gen.py gen --method async` |
+| `gen_triptych_sync.py` (sync) | `gen.py gen` (default sync) |
+| `nanobanana_i2i.py` (banner + product reference) | `gen.py gen --ref banner.jpg --ref product.jpg` |
